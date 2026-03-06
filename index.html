@@ -31,74 +31,88 @@
       padding: 40px 24px;
     }
     .icon {
-      width: 120px;
-      height: 120px;
+      width: 120px; height: 120px;
       border-radius: 28px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.6);
     }
-    .title {
-      color: #FBD72F;
-      font-size: 32px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-    }
-    .subtitle {
-      color: rgba(255,255,255,0.4);
-      font-size: 14px;
-      text-align: center;
-      line-height: 1.6;
-      max-width: 260px;
-    }
+    .title { color: #FBD72F; font-size: 32px; font-weight: 900; letter-spacing: 0.04em; }
+    .subtitle { color: rgba(255,255,255,0.4); font-size: 14px; text-align: center; line-height: 1.6; max-width: 260px; }
     .btn {
-      background: #FBD72F;
-      color: #1E1F24;
-      border: none;
-      border-radius: 16px;
-      padding: 18px 48px;
-      font-size: 17px;
-      font-weight: 800;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
+      background: #FBD72F; color: #1E1F24; border: none;
+      border-radius: 16px; padding: 18px 48px;
+      font-size: 17px; font-weight: 800; cursor: pointer;
+      text-decoration: none; display: inline-block;
       box-shadow: 0 4px 20px rgba(251,215,47,0.3);
       -webkit-tap-highlight-color: transparent;
     }
     .hint {
-      color: rgba(255,255,255,0.25);
-      font-size: 12px;
-      text-align: center;
-      line-height: 1.8;
-      max-width: 280px;
+      color: rgba(255,255,255,0.25); font-size: 12px;
+      text-align: center; line-height: 1.8; max-width: 280px;
     }
-    .hint strong {
-      color: rgba(255,255,255,0.5);
+    .hint strong { color: rgba(255,255,255,0.5); }
+    .share-icon { display:inline-block; width:16px; height:16px; vertical-align:middle; margin:0 2px; }
+    /* Ecran de chargement affiché en mode standalone avant redirect */
+    #loadingScreen {
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; position: fixed; inset: 0; background: #1E1F24;
     }
-    .share-icon {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      vertical-align: middle;
-      margin: 0 2px;
+    #loadingScreen.show { display: flex; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(251,215,47,0.2);
+      border-top-color: #FBD72F;
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-txt { color: rgba(255,255,255,0.4); font-size: 13px; }
   </style>
+
+  <script>
+    var APP_URL = "https://script.google.com/macros/s/AKfycbyXzelVMTi6Dr1msIpf633hzwR-YiY7K8-ZZM8TY7YlGA3fg01ZGjeXzyCR25OyAnhA/exec";
+
+    // Si ouvert depuis l'ecran d'accueil (mode standalone iOS)
+    // ou depuis Android TWA → redirection automatique
+    if (
+      window.navigator.standalone === true ||
+      window.matchMedia("(display-mode: standalone)").matches
+    ) {
+      // Afficher le spinner et rediriger
+      document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("mainContent").style.display = "none";
+        document.getElementById("loadingScreen").classList.add("show");
+      });
+      window.location.replace(APP_URL);
+    }
+  </script>
 </head>
 <body>
 
-  <img class="icon" src="https://therizr31.github.io/wimm/icon.jpg" alt="WIMM?">
-  <div class="title">WIMM?</div>
-  <div class="subtitle">Where Is My Money</div>
+  <!-- Ecran de chargement (mode standalone) -->
+  <div id="loadingScreen">
+    <img class="icon" src="https://therizr31.github.io/wimm/icon.jpg" alt="WIMM?">
+    <div class="spinner"></div>
+    <div class="loading-txt">Ouverture de WIMM...</div>
+  </div>
 
-  <a class="btn" href="https://script.google.com/macros/s/AKfycbwAlhOS02FjpZLi4UIrt2omQcNVwztEEta5kjFxJmInNtmALy-KVTacspn95vir5IVS/exec">Ouvrir l'app →</a>
+  <!-- Page normale (navigateur) -->
+  <div id="mainContent" style="display:flex;flex-direction:column;align-items:center;gap:32px;">
+    <img class="icon" src="https://therizr31.github.io/wimm/icon.jpg" alt="WIMM?">
+    <div class="title">WIMM?</div>
+    <div class="subtitle">Where Is My Money</div>
 
-  <div class="hint">
-    Pour ajouter l'app sur votre écran d'accueil :<br>
-    <strong>Partager</strong> 
-    <svg class="share-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.5">
-      <path d="M8 12H3v9h18v-9h-5M12 3v12M9 6l3-3 3 3"/>
-    </svg>
-    → <strong>Sur l'écran d'accueil</strong>
+    <a class="btn" href="https://script.google.com/macros/s/AKfycbyXzelVMTi6Dr1msIpf633hzwR-YiY7K8-ZZM8TY7YlGA3fg01ZGjeXzyCR25OyAnhA/exec">Ouvrir l'app &rarr;</a>
+
+    <div class="hint">
+      Pour ajouter l'app sur votre &eacute;cran d'accueil :<br>
+      <strong>Partager</strong>
+      <svg class="share-icon" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2.5">
+        <path d="M8 12H3v9h18v-9h-5M12 3v12M9 6l3-3 3 3"/>
+      </svg>
+      &rarr; <strong>Sur l'&eacute;cran d'accueil</strong>
+    </div>
   </div>
 
 </body>
-
 </html>
