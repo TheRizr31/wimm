@@ -2869,6 +2869,272 @@ body.theme-fintech .budget-input:focus {
 }
 body.theme-fintech .btn-primary { color: #FFFFFF !important; }
 body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(--primary) !important; }
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  MOBILE NATIVE UX — Global enhancements                       ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ── 1. TOAST SYSTEM (replaces alert()) ── */
+.wimm-toast-container {
+  position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 9999; display: flex; flex-direction: column-reverse;
+  gap: 8px; pointer-events: none; width: calc(100% - 32px); max-width: 420px;
+}
+.wimm-toast {
+  background: var(--card, #26272D); color: var(--text, #EEE);
+  border-radius: 14px; padding: 14px 18px;
+  font-size: 14px; font-weight: 600; line-height: 1.4;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; gap: 10px;
+  pointer-events: auto; cursor: pointer;
+  animation: toastIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  -webkit-tap-highlight-color: transparent;
+}
+.wimm-toast.toast-out { animation: toastOut 0.25s ease forwards; }
+.wimm-toast.toast-error { border-left: 4px solid var(--red); }
+.wimm-toast.toast-success { border-left: 4px solid var(--green); }
+.wimm-toast.toast-info { border-left: 4px solid var(--blue); }
+.wimm-toast-icon { font-size: 20px; flex-shrink: 0; }
+.wimm-toast-msg { flex: 1; }
+@keyframes toastIn { from { transform: translateY(20px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes toastOut { to { transform: translateY(20px) scale(0.95); opacity: 0; } }
+
+/* ── 2. RIPPLE EFFECT ── */
+.ripple-host { position: relative; overflow: hidden; }
+.ripple-host .ripple-wave {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  transform: scale(0); animation: rippleAnim 0.5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes rippleAnim { to { transform: scale(4); opacity: 0; } }
+
+/* ── 3. VIEW TRANSITIONS ── */
+.view-fade-enter {
+  animation: viewFadeIn 0.22s ease both;
+}
+@keyframes viewFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 4. SKELETON LOADING ── */
+.skel-block {
+  background: linear-gradient(90deg, var(--surface,#2E2F36) 25%, rgba(255,255,255,0.06) 50%, var(--surface,#2E2F36) 75%);
+  background-size: 200% 100%;
+  animation: skelShimmer 1.5s infinite;
+  border-radius: 10px;
+}
+@keyframes skelShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.skel-row { display: flex; gap: 12px; padding: 14px; }
+.skel-circle { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; }
+.skel-line { height: 14px; border-radius: 7px; flex: 1; }
+.skel-line.short { max-width: 40%; }
+.skel-line.med { max-width: 65%; }
+
+/* ── 5. PULL TO REFRESH ── */
+.ptr-indicator {
+  position: absolute; top: -50px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--card); box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  display: flex; align-items: center; justify-content: center;
+  transition: top 0.2s, transform 0.2s; z-index: 10;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.ptr-indicator svg {
+  width: 20px; height: 20px; stroke: var(--primary); fill: none;
+  stroke-width: 2.5; stroke-linecap: round; transition: transform 0.2s;
+}
+.ptr-indicator.refreshing svg { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 6. SWIPE ACTION ON TX ROWS ── */
+.tx-swipe-wrap {
+  position: relative; overflow: hidden;
+}
+.tx-swipe-actions {
+  position: absolute; top: 0; bottom: 0; right: 0;
+  display: flex; align-items: stretch; transform: translateX(100%);
+  z-index: 1;
+}
+.tx-swipe-btn {
+  width: 72px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: white; gap: 4px;
+  border: none; cursor: pointer;
+}
+.tx-swipe-btn.swipe-check { background: var(--green); }
+.tx-swipe-btn.swipe-delete { background: var(--red); }
+.tx-swipe-btn-icon { font-size: 20px; }
+
+/* ── 7. ACTION SHEET (replaces context menu on mobile) ── */
+.action-sheet-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5); z-index: 5000;
+  align-items: flex-end; justify-content: center;
+}
+.action-sheet-overlay.active { display: flex; }
+.action-sheet {
+  background: var(--card, #26272D); width: 100%; max-width: 500px;
+  border-radius: 20px 20px 0 0;
+  padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 12px);
+  animation: sheetSlideUp 0.28s cubic-bezier(0.25,1,0.5,1);
+}
+.action-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: rgba(255,255,255,0.2); margin: 6px auto 10px;
+}
+.action-sheet-item {
+  padding: 16px 24px; font-size: 16px; font-weight: 600;
+  color: var(--text); display: flex; align-items: center; gap: 14px;
+  border: none; background: none; width: 100%; text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  min-height: 52px;
+}
+.action-sheet-item:active { background: rgba(255,255,255,0.06); }
+.action-sheet-item.danger { color: var(--red); }
+.action-sheet-cancel {
+  margin: 8px 16px 0; padding: 16px; border-radius: 14px;
+  background: var(--surface); color: var(--text); font-size: 16px;
+  font-weight: 700; text-align: center; width: calc(100% - 32px);
+  border: none; cursor: pointer; min-height: 52px;
+}
+@keyframes sheetSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.action-sheet.sheet-out { animation: sheetSlideDown 0.2s ease forwards; }
+@keyframes sheetSlideDown { to { transform: translateY(100%); } }
+
+/* ── 8. MOBILE BOTTOM SHEET MODALS ── */
+@media (max-width: 768px) {
+  .modal-overlay.active { align-items: flex-end; }
+  .modal-sheet, .modal-large, .modal {
+    border-radius: 24px 24px 0 0 !important;
+    max-width: 100% !important; width: 100% !important;
+    margin: 0 !important;
+    max-height: 92vh !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
+    animation: sheetSlideUp 0.28s cubic-bezier(0.25,1,0.5,1) !important;
+  }
+  .modal-handle { display: block !important; }
+}
+
+/* ── 9. TOUCH TARGETS 44px+ ── */
+@media (max-width: 1023px) {
+  .icon-cleared { width: 36px; height: 36px; font-size: 14px; }
+  .queue-item-del { width: 44px; height: 44px; font-size: 18px; }
+  .btn-fold { min-height: 44px; min-width: 44px; padding: 0 14px; }
+  .btn-prev-edit, .btn-prev-del { width: 44px; height: 44px; font-size: 18px; }
+  .btn-prev-recu, .btn-prev-unlink { min-height: 44px; padding: 0 14px; }
+  .btn-settings-open { width: 44px; height: 44px; }
+  .fab-add { width: 56px; height: 56px; font-size: 28px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+    right: 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+  }
+  .tx-table input[type="checkbox"] {
+    width: 22px; height: 22px; min-width: 22px;
+  }
+  .filter-uncleared { min-height: 44px; display: flex; align-items: center; padding: 0 8px; }
+  .filter-uncleared input[type="checkbox"] { width: 22px; height: 22px; }
+  .btn-filter-reset { min-width: 44px; min-height: 44px; }
+  .btn-depassement { min-width: 44px; min-height: 44px; }
+  .btn-copy-prev { min-height: 44px; }
+  .btn-danger-sm { min-height: 44px; }
+  .btn-budget-add { min-width: 44px; min-height: 44px; }
+  .nav-item .nav-label { font-size: 12px; }
+  .selection-bar-actions button { min-height: 44px; font-size: 13px; }
+  #reconcileBtn { min-height: 44px; font-size: 12px; padding: 6px 12px; }
+}
+
+/* ── 10. INTERMEDIATE BREAKPOINTS ── */
+@media (max-width: 375px) {
+  .bottom-nav { min-width: unset; padding: 4px; gap: 1px; }
+  .nav-item { padding: 4px 3px; }
+  .nav-item .nav-icon-wrap { width: 40px; height: 40px; }
+  .budget-action-bar { flex-wrap: wrap; }
+  .btn-copy-prev { font-size: 12px; padding: 6px 10px; }
+  .modal-sheet, .modal-large, .modal { padding: 16px 14px 28px !important; }
+  .savings-hero-amount { font-size: 32px !important; }
+}
+@media (max-width: 428px) and (min-width: 376px) {
+  .bottom-nav { min-width: unset; width: calc(100% - 24px); }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .bottom-nav { max-width: 480px; }
+  .modal-sheet, .modal-large { max-width: 480px !important; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .bottom-nav { padding: 4px; border-radius: 24px; }
+  .nav-item .nav-icon-wrap { width: 36px; height: 36px; }
+  .nav-item .nav-label { display: none; }
+  .app-header { padding: 6px 16px 4px !important; }
+}
+
+/* ── 11. BOTTOM NAV ACTIVE INDICATOR ── */
+.nav-item::after {
+  content: ''; position: absolute; bottom: 2px;
+  left: 50%; width: 0; height: 3px;
+  border-radius: 2px; background: var(--primary);
+  transform: translateX(-50%);
+  transition: width 0.25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.nav-item.active::after { width: 24px; }
+
+/* ── 12. TRANSACTION CARDS (mobile) ── */
+.tx-card-list { display: none; flex-direction: column; gap: 6px; }
+.tx-card {
+  background: var(--card); border-radius: 14px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  position: relative; overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s;
+}
+.tx-card:active { transform: scale(0.98); }
+.tx-card.row-cleared { border-left: 3px solid var(--green); }
+.tx-card.row-locked { opacity: 0.6; }
+.tx-card.row-selected { background: rgba(251,215,47,0.08); border: 1px solid var(--primary); }
+.tx-card-check { width: 22px; height: 22px; flex-shrink: 0; }
+.tx-card-body { flex: 1; min-width: 0; }
+.tx-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tx-card-cat { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-card-amount { font-weight: 800; font-size: 16px; flex-shrink: 0; font-family: var(--font-amount); }
+.tx-card-bottom { display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+.tx-card-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-card-icons { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+
+@media (max-width: 1023px) {
+  .tx-table-wrap { display: none !important; }
+  .tx-card-list { display: flex !important; }
+}
+@media (min-width: 1024px) {
+  .tx-card-list { display: none !important; }
+}
+
+/* ── 13. IMPROVED SPINNER → SKELETON ── */
+.skeleton-container { display: none; }
+.skeleton-container.active { display: block; }
+
+/* ── 14. HAPTIC BUTTON PRESS ── */
+@media (max-width: 1023px) {
+  .btn-primary:active, .btn-secondary:active, .btn-dark:active,
+  .btn-ghost:active, .btn-mini:active, .btn-cancel:active,
+  .btn-settings-add:active, .fab-add:active,
+  .drawer-menu-item:active, .settings-tab:active,
+  .pref-tab-btn:active, .theme-option:active {
+    transform: scale(0.97);
+    transition: transform 0.1s;
+  }
+}
+
+/* ── 15. TX MENU → ACTION SHEET on mobile ── */
+@media (max-width: 1023px) {
+  .tx-menu { display: none !important; }
+}
 </style>
 ```
 
@@ -10670,6 +10936,515 @@ _renderSavings();
 .withFailureHandler(err => { hideSpinner(); showInfoModal(’❌ ’ + (err.message || err)); })
 .deleteProject(id);
 }
+
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  MOBILE NATIVE UX — JavaScript Enhancements                   ║
+   ║  Aucune fonction de calcul n'est modifiée.                     ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+// ── 1. TOAST SYSTEM ──
+(function() {
+  // Create toast container
+  const tc = document.createElement('div');
+  tc.className = 'wimm-toast-container';
+  tc.id = 'wimmToastContainer';
+  document.body.appendChild(tc);
+
+  window.showToast = function(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || 3000;
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const t = document.createElement('div');
+    t.className = 'wimm-toast toast-' + type;
+    t.innerHTML = '<span class="wimm-toast-icon">' + (icons[type]||'ℹ') + '</span><span class="wimm-toast-msg">' + msg + '</span>';
+    t.addEventListener('click', function() { dismissToast(t); });
+    tc.appendChild(t);
+    // Haptic
+    if (type === 'error' && navigator.vibrate) navigator.vibrate(50);
+    if (type === 'success' && navigator.vibrate) navigator.vibrate([10,30,10]);
+    // Auto dismiss
+    setTimeout(function() { dismissToast(t); }, duration);
+    return t;
+  };
+
+  function dismissToast(t) {
+    if (t._dismissed) return;
+    t._dismissed = true;
+    t.classList.add('toast-out');
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+  }
+})();
+
+// ── 2. RIPPLE EFFECT ──
+(function() {
+  function createRipple(e) {
+    var el = e.currentTarget;
+    var rect = el.getBoundingClientRect();
+    var size = Math.max(rect.width, rect.height) * 2;
+    var x = e.clientX - rect.left - size/2;
+    var y = e.clientY - rect.top - size/2;
+    // Remove old
+    var old = el.querySelector('.ripple-wave');
+    if (old) old.remove();
+    var wave = document.createElement('span');
+    wave.className = 'ripple-wave';
+    wave.style.cssText = 'width:' + size + 'px;height:' + size + 'px;left:' + x + 'px;top:' + y + 'px;';
+    el.appendChild(wave);
+    setTimeout(function() { if (wave.parentNode) wave.remove(); }, 600);
+  }
+  // Apply to interactive elements
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.btn-primary,.btn-secondary,.btn-dark,.nav-item,.drawer-menu-item,.fab-add,.settings-tab,.action-sheet-item');
+    if (btn && !btn.classList.contains('ripple-host')) {
+      btn.classList.add('ripple-host');
+    }
+    if (btn && btn.classList.contains('ripple-host')) {
+      createRipple(e);
+    }
+  }, true);
+})();
+
+// ── 3. VIEW TRANSITIONS (fade between views) ──
+(function() {
+  var _origHideAll = window.hideAll;
+  var _origShowTx = window.showTransactions;
+  var _origShowBudget = window.showBudget;
+  var _origShowHistory = window.showHistory;
+  var _origShowSavings = window.showSavingsPage;
+  var _origShowSettings = window.showSettingsPage;
+
+  function fadeInView(sectionId) {
+    var el = document.getElementById(sectionId);
+    if (el) {
+      el.classList.remove('view-fade-enter');
+      void el.offsetWidth; // force reflow
+      el.classList.add('view-fade-enter');
+    }
+  }
+
+  window.showTransactions = function() {
+    _origShowTx.apply(this, arguments);
+    fadeInView('transactionsSection');
+  };
+  window.showBudget = function() {
+    _origShowBudget.apply(this, arguments);
+    fadeInView('budgetSection');
+  };
+  window.showHistory = function() {
+    _origShowHistory.apply(this, arguments);
+    fadeInView('historySection');
+  };
+  if (_origShowSavings) {
+    window.showSavingsPage = function() {
+      _origShowSavings.apply(this, arguments);
+      fadeInView('savings-page');
+    };
+  }
+  if (_origShowSettings) {
+    window.showSettingsPage = function() {
+      _origShowSettings.apply(this, arguments);
+      fadeInView('settingsPage');
+    };
+  }
+})();
+
+// ── 4. SKELETON LOADING ──
+window.showSkeleton = function(containerId) {
+  var c = document.getElementById(containerId);
+  if (!c) return;
+  var html = '';
+  for (var i = 0; i < 6; i++) {
+    html += '<div class="skel-row"><div class="skel-block skel-circle"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px;"><div class="skel-block skel-line med"></div><div class="skel-block skel-line short"></div></div></div>';
+  }
+  var skel = document.createElement('div');
+  skel.className = 'skeleton-container active';
+  skel.id = containerId + '_skeleton';
+  skel.innerHTML = html;
+  c.parentNode.insertBefore(skel, c);
+  c.style.display = 'none';
+};
+window.hideSkeleton = function(containerId) {
+  var skel = document.getElementById(containerId + '_skeleton');
+  if (skel) skel.remove();
+  var c = document.getElementById(containerId);
+  if (c) c.style.display = '';
+};
+
+// ── 5. PULL TO REFRESH ──
+(function() {
+  var isMobile = window.matchMedia('(max-width: 1023px)').matches;
+  if (!isMobile) return;
+
+  var sheet = document.getElementById('mainSheet');
+  if (!sheet) return;
+
+  var indicator = document.createElement('div');
+  indicator.className = 'ptr-indicator';
+  indicator.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
+  sheet.style.position = 'relative';
+  sheet.appendChild(indicator);
+
+  var startY = 0, pulling = false, threshold = 70;
+
+  sheet.addEventListener('touchstart', function(e) {
+    if (sheet.scrollTop <= 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+
+  sheet.addEventListener('touchmove', function(e) {
+    if (!pulling) return;
+    var dy = e.touches[0].clientY - startY;
+    if (dy < 0) { pulling = false; return; }
+    dy = Math.min(dy, threshold * 1.5);
+    indicator.style.top = (dy - 40) + 'px';
+    indicator.querySelector('svg').style.transform = 'rotate(' + (dy / threshold * 360) + 'deg)';
+  }, { passive: true });
+
+  sheet.addEventListener('touchend', function() {
+    if (!pulling) return;
+    pulling = false;
+    var top = parseInt(indicator.style.top) || -50;
+    if (top > threshold - 50) {
+      indicator.classList.add('refreshing');
+      indicator.style.top = '10px';
+      // Trigger refresh
+      if (typeof _refreshAll === 'function') {
+        _refreshAll();
+      }
+      setTimeout(function() {
+        indicator.classList.remove('refreshing');
+        indicator.style.top = '-50px';
+      }, 2000);
+    } else {
+      indicator.style.top = '-50px';
+    }
+  }, { passive: true });
+})();
+
+// ── 6. TX CARD LIST (mobile alternative to table) ──
+(function() {
+  var _origRenderTx = window.renderTransactions;
+  window.renderTransactions = function(data) {
+    // Call original (renders table)
+    _origRenderTx.apply(this, arguments);
+    // Also render cards for mobile
+    _renderTxCards(data);
+  };
+
+  function _renderTxCards(data) {
+    if (!data) data = allTransactions;
+    var container = document.getElementById('historyContainer');
+    if (!container) return;
+
+    // Remove old card list
+    var old = container.querySelector('.tx-card-list');
+    if (old) old.remove();
+
+    var cardList = document.createElement('div');
+    cardList.className = 'tx-card-list';
+
+    data.forEach(function(t) {
+      var isSelected = selectedIds && selectedIds.has(t.id);
+      var amountNum = Number(t.amount);
+      var isSortie = amountNum >= 0;
+      var amtColor = isSortie ? 'var(--red)' : 'var(--green)';
+      var amtLabel = (isSortie ? '−' : '+') + formatEuro(Math.abs(amountNum));
+
+      var card = document.createElement('div');
+      card.className = 'tx-card';
+      card.id = 'card-' + t.id;
+      if (isSelected) card.classList.add('row-selected');
+      if (t.cleared) card.classList.add('row-cleared');
+      if (t.locked) card.classList.add('row-locked');
+
+      var descPart = t.description ? '<span class="tx-card-desc">' + t.description + '</span>' : '';
+      var debtorPart = t.debtor ? '<span>' + t.debtor + '</span>' : '';
+      var sep = (t.description && t.debtor) ? ' · ' : '';
+
+      card.innerHTML =
+        '<div class="tx-card-check">' +
+          '<div class="tx-checkbox ' + (isSelected ? 'checked' : '') + '" id="cchk-' + t.id + '">' + (isSelected ? '✓' : '') + '</div>' +
+        '</div>' +
+        '<div class="tx-card-body">' +
+          '<div class="tx-card-top">' +
+            '<span class="tx-card-cat">' + (t.category||'') + '</span>' +
+            '<span class="tx-card-amount" style="color:' + amtColor + '">' + amtLabel + '</span>' +
+          '</div>' +
+          '<div class="tx-card-bottom">' +
+            '<span>' + (t.date||'') + '</span>' +
+            (debtorPart ? sep + debtorPart : '') +
+            (descPart ? sep + descPart : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="tx-card-icons">' +
+          '<span class="icon-cleared ' + (t.cleared ? 'on' : '') + '"' +
+            ' style="' + (t.locked ? 'cursor:default;opacity:0.5;' : '') + '"' +
+            ' onclick="handleToggleCleared(\'' + t.id + '\',event)">✓</span>' +
+        '</div>';
+
+      // Checkbox
+      card.querySelector('.tx-checkbox').addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSelect(t.id, e);
+      });
+
+      // Card tap
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('.tx-checkbox,.icon-cleared')) return;
+        if (selectedIds && selectedIds.size > 0) { toggleSelect(t.id, e); return; }
+        if (t.locked) return;
+        // Long press handled separately; normal tap = edit or action sheet
+        var parts = (t.date||'').split('/');
+        var isoDate = parts.length === 3 ? parts[2] + '-' + parts[1] + '-' + parts[0] : t.date;
+        if (window.innerWidth <= 1023) {
+          _openTxActionSheet(t, isoDate);
+        } else {
+          startEditRow(t.id, isoDate, e);
+        }
+      });
+
+      // Swipe setup
+      _setupSwipe(card, t);
+
+      cardList.appendChild(card);
+    });
+
+    container.appendChild(cardList);
+  }
+})();
+
+// ── 7. SWIPE-TO-ACTION ──
+function _setupSwipe(card, t) {
+  var startX = 0, currentX = 0, swiping = false;
+  var SWIPE_THRESHOLD = 60;
+
+  card.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    currentX = startX;
+    swiping = true;
+  }, { passive: true });
+
+  card.addEventListener('touchmove', function(e) {
+    if (!swiping) return;
+    currentX = e.touches[0].clientX;
+    var dx = currentX - startX;
+    if (dx > 10) { swiping = false; return; } // right swipe ignored
+    if (dx < -10) {
+      card.style.transform = 'translateX(' + Math.max(dx, -144) + 'px)';
+      card.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  card.addEventListener('touchend', function() {
+    if (!swiping) { _resetSwipe(card); return; }
+    swiping = false;
+    var dx = currentX - startX;
+    if (dx < -SWIPE_THRESHOLD) {
+      // Show action buttons
+      card.style.transform = 'translateX(-144px)';
+      card.style.transition = 'transform 0.2s';
+      _showSwipeActions(card, t);
+    } else {
+      _resetSwipe(card);
+    }
+  }, { passive: true });
+}
+
+function _showSwipeActions(card, t) {
+  // Remove existing actions
+  var existing = card.querySelector('.tx-swipe-actions');
+  if (existing) existing.remove();
+
+  var actions = document.createElement('div');
+  actions.className = 'tx-swipe-actions';
+  actions.style.transform = 'translateX(0)';
+  actions.innerHTML =
+    '<button class="tx-swipe-btn swipe-check" onclick="event.stopPropagation(); handleToggleCleared(\'' + t.id + '\', event); _resetSwipeAll();">' +
+      '<span class="tx-swipe-btn-icon">✓</span>Pointer</button>' +
+    '<button class="tx-swipe-btn swipe-delete" onclick="event.stopPropagation(); openDeleteModal(\'' + t.id + '\', event); _resetSwipeAll();">' +
+      '<span class="tx-swipe-btn-icon">🗑</span>Suppr.</button>';
+  card.appendChild(actions);
+}
+
+function _resetSwipe(card) {
+  card.style.transform = '';
+  card.style.transition = 'transform 0.2s';
+  setTimeout(function() {
+    var a = card.querySelector('.tx-swipe-actions');
+    if (a) a.remove();
+    card.style.transition = '';
+  }, 250);
+}
+
+function _resetSwipeAll() {
+  document.querySelectorAll('.tx-card').forEach(function(c) { _resetSwipe(c); });
+}
+
+// ── 8. ACTION SHEET (mobile context menu) ──
+(function() {
+  var overlay = document.createElement('div');
+  overlay.className = 'action-sheet-overlay';
+  overlay.id = 'actionSheetOverlay';
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) closeActionSheet(); });
+  document.body.appendChild(overlay);
+
+  window._openTxActionSheet = function(t, isoDate) {
+    var isIncoming = Number(t.amount) < 0;
+    var skipLabel = t.skip_link ? '🔗 Marquer comme attendu' : '🚫 Marquer comme ponctuel';
+
+    var sheet = document.createElement('div');
+    sheet.className = 'action-sheet';
+    sheet.innerHTML =
+      '<div class="action-sheet-handle"></div>' +
+      '<div style="padding:4px 24px 12px;font-size:13px;color:var(--text-muted);">' +
+        (t.category||'') + ' · ' + (t.date||'') +
+      '</div>' +
+      (t.locked ? '' : '<button class="action-sheet-item" onclick="closeActionSheet();startEditRow(\'' + t.id + '\',\'' + isoDate + '\',event)">✏️ Modifier</button>') +
+      '<button class="action-sheet-item" onclick="closeActionSheet();handleToggleCleared(\'' + t.id + '\',event)">✓ ' + (t.cleared ? 'Dé-pointer' : 'Pointer') + '</button>' +
+      '<button class="action-sheet-item" onclick="closeActionSheet();handleToggleLocked(\'' + t.id + '\',event)">' + (t.locked ? '🔓 Déverrouiller' : '🔒 Verrouiller') + '</button>' +
+      (isIncoming ? '<button class="action-sheet-item" onclick="closeActionSheet();_setTxSkipLink(\'' + t.id + '\',' + !t.skip_link + ',event)">' + skipLabel + '</button>' : '') +
+      (t.locked ? '' : '<button class="action-sheet-item danger" onclick="closeActionSheet();openDeleteModal(\'' + t.id + '\',event)">🗑 Supprimer</button>') +
+      '<button class="action-sheet-cancel" onclick="closeActionSheet()">Annuler</button>';
+
+    overlay.innerHTML = '';
+    overlay.appendChild(sheet);
+    overlay.classList.add('active');
+
+    // Swipe down to close
+    var sy = 0;
+    sheet.addEventListener('touchstart', function(e) {
+      sy = e.touches[0].clientY;
+    }, { passive: true });
+    sheet.addEventListener('touchmove', function(e) {
+      var dy = e.touches[0].clientY - sy;
+      if (dy > 0) {
+        sheet.style.transform = 'translateY(' + dy + 'px)';
+        sheet.style.transition = 'none';
+      }
+    }, { passive: true });
+    sheet.addEventListener('touchend', function(e) {
+      var dy = e.changedTouches[0].clientY - sy;
+      if (dy > 80) {
+        closeActionSheet();
+      } else {
+        sheet.style.transform = '';
+        sheet.style.transition = 'transform 0.2s';
+      }
+    }, { passive: true });
+
+    if (navigator.vibrate) navigator.vibrate(10);
+  };
+
+  window.closeActionSheet = function() {
+    var sheet = overlay.querySelector('.action-sheet');
+    if (sheet) {
+      sheet.classList.add('sheet-out');
+      setTimeout(function() { overlay.classList.remove('active'); overlay.innerHTML = ''; }, 250);
+    } else {
+      overlay.classList.remove('active');
+    }
+  };
+})();
+
+// ── 9. MODAL SWIPE-DOWN-TO-CLOSE ──
+(function() {
+  document.addEventListener('touchstart', function(e) {
+    var handle = e.target.closest('.modal-handle');
+    if (!handle) return;
+    var modal = handle.closest('.modal-sheet,.modal-large,.modal');
+    if (!modal) return;
+    var overlay = modal.closest('.modal-overlay');
+    var sy = e.touches[0].clientY;
+
+    function onMove(ev) {
+      var dy = ev.touches[0].clientY - sy;
+      if (dy > 0) {
+        modal.style.transform = 'translateY(' + dy + 'px)';
+        modal.style.transition = 'none';
+      }
+    }
+    function onEnd(ev) {
+      var dy = ev.changedTouches[0].clientY - sy;
+      if (dy > 100) {
+        modal.style.transform = 'translateY(100vh)';
+        modal.style.transition = 'transform 0.25s';
+        setTimeout(function() {
+          if (overlay) overlay.classList.remove('active');
+          modal.style.transform = '';
+          modal.style.transition = '';
+        }, 300);
+      } else {
+        modal.style.transform = '';
+        modal.style.transition = 'transform 0.2s';
+      }
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    }
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onEnd, { passive: true });
+  }, { passive: true });
+})();
+
+// ── 10. TOUCH DRAG & DROP FOR BUDGET REORDER ──
+(function() {
+  document.addEventListener('touchstart', function(e) {
+    var handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    var row = handle.closest('tr');
+    if (!row) return;
+    var tbody = row.parentNode;
+    if (!tbody) return;
+
+    e.preventDefault();
+    var startY = e.touches[0].clientY;
+    var rowH = row.offsetHeight;
+    row.style.background = 'rgba(251,215,47,0.1)';
+    row.style.zIndex = '100';
+
+    function onMove(ev) {
+      var dy = ev.touches[0].clientY - startY;
+      row.style.transform = 'translateY(' + dy + 'px)';
+      // Find swap target
+      var rows = Array.from(tbody.querySelectorAll('tr'));
+      var idx = rows.indexOf(row);
+      if (dy > rowH && idx < rows.length - 1) {
+        tbody.insertBefore(rows[idx + 1], row);
+        startY += rowH;
+      } else if (dy < -rowH && idx > 0) {
+        tbody.insertBefore(row, rows[idx - 1]);
+        startY -= rowH;
+      }
+    }
+    function onEnd() {
+      row.style.transform = '';
+      row.style.background = '';
+      row.style.zIndex = '';
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+    }
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd, { passive: true });
+  }, { passive: false });
+})();
+
+// ── 11. HAPTIC FEEDBACK ──
+(function() {
+  var hapticSelectors = '.btn-primary,.btn-secondary,.fab-add,.nav-item,.action-sheet-item,.tx-swipe-btn';
+  document.addEventListener('click', function(e) {
+    if (e.target.closest(hapticSelectors) && navigator.vibrate) {
+      navigator.vibrate(8);
+    }
+  }, true);
+})();
+
+// ── 12. CLOSE MENUS ON OUTSIDE TAP ──
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.tx-card,.action-sheet-overlay')) {
+    _resetSwipeAll();
+  }
+});
 
 </script>
 
