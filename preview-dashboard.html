@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>WIMM — Aperçu Tableau de bord</title>
+<style>
+:root {
+  --bg: #1E1F24;
+  --sheet: #16171B;
+  --card: #26272D;
+  --surface: #2E2F36;
+  --segment: #303138;
+  --text: #EEEDE8;
+  --text-muted: #8A8B8E;
+  --text-on-primary: #111111;
+  --primary: #FBD72F;
+  --primary-dark: #D4B21F;
+  --primary-glow: rgba(251,215,47,0.14);
+  --red: #E74C3C;
+  --green: #2ECC71;
+  --blue: #3B82F6;
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.35);
+  --shadow-modal: 0 8px 32px rgba(0,0,0,0.55);
+  --radius-card: 18px;
+  --radius-btn: 14px;
+  --font-amount: inherit;
+  --font-amount-weight: 700;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+/* ===== HEADER ===== */
+.app-header {
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #1A1B1D 0%, #2C2D30 100%);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px; gap: 8px;
+}
+.app-title {
+  font-size: 19px; font-weight: 700; color: white; margin: 0;
+  letter-spacing: 0.3px; flex: 1; text-align: center;
+}
+.btn-settings-open, .btn-search-toggle {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(255,255,255,0.15); border: none; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; cursor: pointer; flex-shrink: 0;
+}
+
+/* ===== GLOBAL SEARCH BAR ===== */
+.global-search-bar {
+  display: none; padding: 0 16px 10px;
+  background: linear-gradient(160deg, #1A1B1D 0%, #2C2D30 100%);
+}
+.global-search-bar.active { display: block; }
+.global-search-wrap { position: relative; }
+.global-search-wrap .gs-icon {
+  position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 15px; pointer-events: none; color: var(--text-muted);
+}
+.global-search-wrap input {
+  width: 100%; padding: 10px 40px 10px 38px;
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; color: white; font-size: 15px;
+  font-family: inherit; outline: none;
+}
+.global-search-wrap input::placeholder { color: rgba(255,255,255,0.4); }
+.global-search-wrap input:focus { border-color: var(--primary); background: rgba(255,255,255,0.18); }
+.global-search-close {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: rgba(255,255,255,0.5); font-size: 18px;
+  cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+.gs-results {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--card); border: 1px solid var(--segment);
+  border-radius: 0 0 14px 14px; max-height: 60vh; overflow-y: auto;
+  z-index: 500; box-shadow: var(--shadow-modal); display: none;
+}
+.gs-results.visible { display: block; }
+.gs-results-group-title {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-muted); padding: 10px 14px 4px;
+}
+.gs-result-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.1s;
+}
+.gs-result-item:hover { background: var(--primary-glow); }
+.gs-result-icon { font-size: 18px; flex-shrink: 0; width: 28px; text-align: center; }
+.gs-result-text { flex: 1; min-width: 0; }
+.gs-result-main { font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-result-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+.gs-result-amount { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+
+/* ===== SHEET ===== */
+.sheet {
+  flex: 1; background: var(--sheet);
+  overflow-y: auto; overflow-x: hidden;
+  padding: 12px 14px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px);
+}
+
+/* ===== DASHBOARD ===== */
+.dash-period-bar {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+}
+.dash-period-bar select {
+  flex: 1; height: 38px; padding: 6px 10px; font-size: 15px;
+  border-radius: 10px; background: var(--surface); color: var(--text);
+  border: 1px solid var(--segment); font-family: inherit;
+}
+.dash-period-bar button {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--surface); color: var(--text); font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  border: none; cursor: pointer; font-family: inherit;
+}
+.dash-period-bar button:active { background: var(--primary-glow); }
+
+.dash-kpi-row {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 10px; margin-bottom: 12px;
+}
+@media (min-width: 768px) {
+  .dash-kpi-row { grid-template-columns: repeat(4, 1fr); }
+}
+.dash-kpi {
+  background: var(--card); border-radius: var(--radius-card);
+  padding: 14px 16px; box-shadow: var(--shadow-card); text-align: center;
+}
+.dash-kpi-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 6px;
+}
+.dash-kpi-value {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.5px;
+}
+.dash-kpi-value.pos { color: var(--green); }
+.dash-kpi-value.neg { color: var(--red); }
+.dash-kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.dash-grid {
+  display: grid; grid-template-columns: 1fr; gap: 12px;
+}
+@media (min-width: 768px) {
+  .dash-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1200px) {
+  .dash-grid { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.dash-card {
+  background: var(--card); border-radius: var(--radius-card);
+  padding: 16px; box-shadow: var(--shadow-card);
+}
+.dash-card-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 12px;
+}
+
+.dash-top-cats { list-style: none; padding: 0; margin: 0; }
+.dash-top-cat {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.dash-top-cat:last-child { border-bottom: none; }
+.dash-cat-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dash-cat-name { flex: 1; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-cat-bar-wrap { flex: 1; height: 6px; background: var(--surface); border-radius: 3px; overflow: hidden; }
+.dash-cat-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+.dash-cat-amount { font-size: 13px; font-weight: 700; color: var(--text); flex-shrink: 0; min-width: 65px; text-align: right; }
+.dash-cat-pct { font-size: 11px; color: var(--text-muted); flex-shrink: 0; min-width: 36px; text-align: right; }
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  left: 50%; transform: translateX(-50%);
+  background: rgba(18, 19, 24, 0.97);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-radius: 32px;
+  display: flex; gap: 2px; z-index: 100; padding: 6px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.08);
+  min-width: 340px; width: calc(100% - 40px); max-width: 540px;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 6px 5px; color: rgba(255,255,255,0.45); font-size: 11px; gap: 4px;
+  border-radius: 14px; background: none; border: none;
+  font-weight: 500; transition: all 0.22s; flex: 1; cursor: pointer;
+  font-family: inherit;
+}
+.nav-item:active { transform: scale(0.90); }
+.nav-item .nav-icon-wrap {
+  width: 42px; height: 42px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.22s; background: transparent;
+}
+.nav-item.active .nav-icon-wrap {
+  background: var(--primary);
+  box-shadow: 0 4px 14px rgba(251,215,47,0.45);
+}
+.nav-item.active { color: var(--primary); font-weight: 700; }
+.nav-item.active .nav-icon-wrap svg { stroke: #111 !important; }
+.nav-item .nav-icon { font-size: 22px; line-height: 1; }
+.nav-item .nav-label { font-size: 10px; margin-top: 1px; }
+
+/* ===== BADGE PREVIEW ===== */
+.preview-badge {
+  position: fixed; top: 12px; right: 12px;
+  background: var(--primary); color: #111;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; z-index: 999;
+  box-shadow: 0 2px 10px rgba(251,215,47,0.4);
+}
+
+/* ===== RESPONSIVE DESKTOP ===== */
+@media (min-width: 1024px) {
+  .sheet { padding: 20px 40px; }
+  .dash-kpi-value { font-size: 26px; }
+  .bottom-nav { max-width: 600px; }
+}
+</style>
+</head>
+<body>
+
+<div class="preview-badge">APERÇU</div>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="app-header">
+    <div class="header-inner">
+      <button class="btn-settings-open" title="Réglages">☰</button>
+      <h1 class="app-title" id="appTitle">Tableau de bord</h1>
+      <button class="btn-search-toggle" id="btnSearchToggle" onclick="toggleSearch()" title="Recherche">🔍</button>
+    </div>
+    <div class="global-search-bar" id="globalSearchBar">
+      <div class="global-search-wrap">
+        <span class="gs-icon">🔍</span>
+        <input type="search" id="globalSearchInput" placeholder="Rechercher partout…"
+          oninput="doSearch()" autocomplete="off">
+        <button class="global-search-close" onclick="toggleSearch()">✕</button>
+        <div class="gs-results" id="gsResults"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHEET / CONTENT -->
+  <div class="sheet">
+    <!-- Period selector -->
+    <div class="dash-period-bar">
+      <button onclick="prevPeriod()">◀</button>
+      <select id="dashPeriodSelect" onchange="renderDashboard()"></select>
+      <button onclick="nextPeriod()">▶</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="dash-kpi-row" id="dashKpis"></div>
+
+    <!-- Charts grid -->
+    <div class="dash-grid">
+      <div class="dash-card">
+        <div class="dash-card-title">Dépenses par catégorie</div>
+        <canvas id="dashChartPie" width="300" height="220"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Top catégories</div>
+        <ul class="dash-top-cats" id="dashTopCats"></ul>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Évolution mensuelle</div>
+        <canvas id="dashChartLine" width="300" height="220"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Budget vs Réel</div>
+        <canvas id="dashChartBar" width="300" height="220"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Revenus vs Dépenses</div>
+        <canvas id="dashChartRevExp" width="300" height="220"></canvas>
+      </div>
+      <div class="dash-card">
+        <div class="dash-card-title">Dernières transactions</div>
+        <div id="dashRecentTx"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item">
+      <span class="nav-icon-wrap"><span class="nav-icon">✏️</span></span>
+      <span class="nav-label">Saisie</span>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon-wrap"><span class="nav-icon" style="display:flex;align-items:center;">
+        <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+          <path d="M13 3 A10 10 0 1 1 3 13 L13 13 Z" fill="rgba(255,255,255,0.45)"/>
+          <path d="M11 1 A10 10 0 0 0 1 11 L11 11 Z" fill="rgba(255,255,255,0.25)"/>
+        </svg>
+      </span></span>
+      <span class="nav-label">Budget</span>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon-wrap"><span class="nav-icon" style="display:flex;align-items:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M3 10h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M5 10L12 4l7 6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="6" y1="10" x2="6" y2="18" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="10" y1="10" x2="10" y2="18" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="14" y1="10" x2="14" y2="18" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="18" y1="10" x2="18" y2="18" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M2 18h20" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+      </span></span>
+      <span class="nav-label">Banque</span>
+    </button>
+    <button class="nav-item">
+      <span class="nav-icon-wrap"><span class="nav-icon" style="display:flex;align-items:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <ellipse cx="11" cy="13.5" rx="7" ry="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <ellipse cx="18.5" cy="14" rx="1.5" ry="1.2" stroke="currentColor" stroke-width="1.2"/>
+          <circle cx="9.5" cy="11.5" r="0.7" fill="currentColor"/>
+          <path d="M10 8.2h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </span></span>
+      <span class="nav-label">Épargne</span>
+    </button>
+    <button class="nav-item active" id="nav-dashboard">
+      <span class="nav-icon-wrap"><span class="nav-icon" style="display:flex;align-items:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="14" y="3" width="7" height="4" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="14" y="10" width="7" height="11" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          <rect x="3" y="13" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </span></span>
+      <span class="nav-label">Board</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══ MOCK DATA ═══
+const CATEGORIES = [
+  { id: "C1", name: "Alimentation" },
+  { id: "C2", name: "Transport" },
+  { id: "C3", name: "Logement" },
+  { id: "C4", name: "Loisirs" },
+  { id: "C5", name: "Santé" },
+  { id: "C6", name: "Vêtements" },
+  { id: "C7", name: "Épargne" },
+  { id: "C8", name: "Restaurants" },
+  { id: "C9", name: "Abonnements" },
+  { id: "C10", name: "Cadeaux" },
+];
+
+const DEBTORS = [
+  { name: "Carrefour" }, { name: "SNCF" }, { name: "EDF" },
+  { name: "Netflix" }, { name: "Amazon" }, { name: "Pharmacie" },
+];
+
+// Generate mock transactions over 8 months
+const TRANSACTIONS = [];
+function _genTx() {
+  const now = new Date();
+  for (let m = 7; m >= 0; m--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    // 15-25 expenses per month
+    const nExp = 15 + Math.floor(Math.random() * 11);
+    for (let i = 0; i < nExp; i++) {
+      const day = String(1 + Math.floor(Math.random() * 28)).padStart(2, "0");
+      const cat = CATEGORIES[Math.floor(Math.random() * CATEGORIES.length)];
+      const debtor = DEBTORS[Math.floor(Math.random() * DEBTORS.length)];
+      const amount = Math.round((5 + Math.random() * 200) * 100) / 100;
+      TRANSACTIONS.push({
+        id: "TX" + TRANSACTIONS.length,
+        date: day + "/" + month + "/" + year,
+        category_id: cat.id,
+        description: debtor.name + " - " + cat.name,
+        debtor: debtor.name,
+        amount: amount, // positive = expense
+        cleared: Math.random() > 0.3,
+        locked: Math.random() > 0.8,
+      });
+    }
+    // 2-4 revenues per month
+    const nRev = 2 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < nRev; i++) {
+      const day = String(1 + Math.floor(Math.random() * 28)).padStart(2, "0");
+      const amount = -(800 + Math.random() * 2500);
+      TRANSACTIONS.push({
+        id: "TX" + TRANSACTIONS.length,
+        date: day + "/" + month + "/" + year,
+        category_id: "C7",
+        description: i === 0 ? "Salaire" : "Virement reçu",
+        debtor: i === 0 ? "Employeur" : "Famille",
+        amount: Math.round(amount * 100) / 100,
+        cleared: true,
+        locked: false,
+      });
+    }
+  }
+}
+_genTx();
+
+const COLORS = [
+  "#FBD72F","#2ECC71","#E74C3C","#3B82F6","#8B5CF6",
+  "#F59E0B","#06B6D4","#EC4899","#10B981","#F97316",
+  "#6366F1","#14B8A6","#EF4444","#84CC16","#D946EF"
+];
+
+function formatEuro(n) {
+  return Number(n).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
+}
+function catName(id) {
+  for (let c of CATEGORIES) if (c.id === id) return c.name;
+  return id;
+}
+function txPeriod(t) {
+  const p = (t.date || "").split("/");
+  return p.length === 3 ? p[1] + "/" + p[2] : "";
+}
+function escHtml(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+// ═══ PERIODS ═══
+function buildPeriods() {
+  const sel = document.getElementById("dashPeriodSelect");
+  const now = new Date();
+  const periods = [];
+  for (let i = 0; i < 8; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    periods.push(String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear());
+  }
+  sel.innerHTML = "";
+  periods.forEach(p => { const o = document.createElement("option"); o.value = p; o.textContent = p; sel.appendChild(o); });
+  sel.value = periods[0];
+}
+function prevPeriod() {
+  const s = document.getElementById("dashPeriodSelect");
+  if (s.selectedIndex < s.options.length - 1) { s.selectedIndex++; renderDashboard(); }
+}
+function nextPeriod() {
+  const s = document.getElementById("dashPeriodSelect");
+  if (s.selectedIndex > 0) { s.selectedIndex--; renderDashboard(); }
+}
+
+// ═══ RENDER DASHBOARD ═══
+function renderDashboard() {
+  const period = document.getElementById("dashPeriodSelect").value;
+
+  const txP = TRANSACTIONS.filter(t => txPeriod(t) === period);
+  const expenses = txP.filter(t => t.amount > 0);
+  const revenues = txP.filter(t => t.amount < 0);
+
+  let totalExp = 0, totalRev = 0;
+  expenses.forEach(t => totalExp += Math.abs(t.amount));
+  revenues.forEach(t => totalRev += Math.abs(t.amount));
+  const balance = totalRev - totalExp;
+
+  // KPIs
+  document.getElementById("dashKpis").innerHTML =
+    `<div class="dash-kpi"><div class="dash-kpi-label">Revenus</div><div class="dash-kpi-value pos">${formatEuro(totalRev)}</div></div>` +
+    `<div class="dash-kpi"><div class="dash-kpi-label">Dépenses</div><div class="dash-kpi-value neg">${formatEuro(totalExp)}</div></div>` +
+    `<div class="dash-kpi"><div class="dash-kpi-label">Solde</div><div class="dash-kpi-value ${balance >= 0 ? 'pos' : 'neg'}">${formatEuro(balance)}</div></div>` +
+    `<div class="dash-kpi"><div class="dash-kpi-label">Transactions</div><div class="dash-kpi-value">${txP.length}</div><div class="dash-kpi-sub">${expenses.length} dép. / ${revenues.length} rev.</div></div>`;
+
+  // Category breakdown
+  const catMap = {};
+  expenses.forEach(t => {
+    if (!catMap[t.category_id]) catMap[t.category_id] = { amount: 0, name: catName(t.category_id) };
+    catMap[t.category_id].amount += Math.abs(t.amount);
+  });
+  const catList = Object.keys(catMap).map(k => ({ id: k, name: catMap[k].name, amount: catMap[k].amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  drawPieChart("dashChartPie", catList);
+  renderTopCats(catList, totalExp);
+  drawLineChart("dashChartLine", period);
+  drawBarChart("dashChartBar", catList);
+  drawRevExpChart("dashChartRevExp", period);
+  renderRecentTx(txP);
+}
+
+// ═══ PIE CHART ═══
+function drawPieChart(canvasId, catList) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 32;
+  const h = 220;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+
+  if (!catList.length) {
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "14px -apple-system, sans-serif";
+    ctx.textAlign = "center"; ctx.fillText("Aucune dépense", w / 2, h / 2);
+    return;
+  }
+
+  let total = 0;
+  catList.forEach(c => total += c.amount);
+
+  const cx = Math.min(w * 0.35, h * 0.45);
+  const cy = h / 2;
+  const r = Math.min(cx - 10, cy - 10, 85);
+  const innerR = r * 0.55;
+  let startAngle = -Math.PI / 2;
+
+  catList.forEach((c, i) => {
+    const sliceAngle = (c.amount / total) * 2 * Math.PI;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fill();
+    startAngle += sliceAngle;
+  });
+
+  ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+  ctx.fillStyle = "#26272D"; ctx.fill();
+
+  ctx.fillStyle = "#EEEDE8"; ctx.font = "bold 15px -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText(formatEuro(total), cx, cy);
+
+  // Legend
+  const legendX = Math.min(w * 0.68, cx + r + 20);
+  let legendY = 16;
+  const maxL = Math.min(catList.length, 7);
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  for (let i = 0; i < maxL; i++) {
+    ctx.fillStyle = COLORS[i % COLORS.length];
+    ctx.fillRect(legendX, legendY + i * 22, 10, 10);
+    ctx.fillStyle = "#EEEDE8"; ctx.font = "12px -apple-system, sans-serif";
+    let label = catList[i].name;
+    if (label.length > 14) label = label.substring(0, 13) + "…";
+    ctx.fillText(label, legendX + 14, legendY + i * 22 - 1);
+  }
+}
+
+// ═══ TOP CATEGORIES ═══
+function renderTopCats(catList, totalExp) {
+  const el = document.getElementById("dashTopCats");
+  const max = catList.length ? catList[0].amount : 1;
+  el.innerHTML = catList.slice(0, 8).map((c, i) => {
+    const pct = totalExp > 0 ? Math.round(c.amount / totalExp * 100) : 0;
+    const barW = Math.max(5, Math.round(c.amount / max * 100));
+    return `<li class="dash-top-cat">
+      <span class="dash-cat-color" style="background:${COLORS[i % COLORS.length]}"></span>
+      <span class="dash-cat-name">${escHtml(c.name)}</span>
+      <span class="dash-cat-bar-wrap"><span class="dash-cat-bar" style="width:${barW}%;background:${COLORS[i % COLORS.length]}"></span></span>
+      <span class="dash-cat-amount">${formatEuro(c.amount)}</span>
+      <span class="dash-cat-pct">${pct}%</span></li>`;
+  }).join("");
+}
+
+// ═══ LINE CHART ═══
+function getLastNPeriods(p, n) {
+  const parts = p.split("/");
+  let month = parseInt(parts[0]), year = parseInt(parts[1]);
+  const result = [];
+  for (let i = n - 1; i >= 0; i--) {
+    let m = month - i, y = year;
+    while (m <= 0) { m += 12; y--; }
+    result.push(String(m).padStart(2, "0") + "/" + y);
+  }
+  return result;
+}
+
+function drawLineChart(canvasId, period) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 32;
+  const h = 220;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+
+  const periods = getLastNPeriods(period, 6);
+  const expData = [], revData = [];
+  periods.forEach(p => {
+    const txP = TRANSACTIONS.filter(t => txPeriod(t) === p);
+    let exp = 0, rev = 0;
+    txP.forEach(t => { const a = Math.abs(t.amount); if (t.amount > 0) exp += a; else rev += a; });
+    expData.push(exp); revData.push(rev);
+  });
+
+  const maxVal = Math.max(...expData, ...revData, 100);
+  const padL = 55, padR = 15, padT = 22, padB = 35;
+  const chartW = w - padL - padR, chartH = h - padT - padB;
+
+  // Grid
+  ctx.strokeStyle = "#303138"; ctx.lineWidth = 0.5;
+  for (let g = 0; g <= 4; g++) {
+    const gy = padT + (chartH / 4) * g;
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "10px -apple-system, sans-serif";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * g) + "€", padL - 6, gy);
+  }
+
+  // X labels
+  ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillStyle = "#8A8B8E";
+  ctx.font = "11px -apple-system, sans-serif";
+  periods.forEach((p, i) => {
+    const x = padL + (chartW / (periods.length - 1 || 1)) * i;
+    ctx.fillText(p.split("/")[0] + "/" + p.split("/")[1].substring(2), x, h - padB + 8);
+  });
+
+  function drawLine(data, color) {
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = "round";
+    data.forEach((v, i) => {
+      const x = padL + (chartW / (periods.length - 1 || 1)) * i;
+      const y = padT + chartH - (v / maxVal) * chartH;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // Area fill
+    ctx.lineTo(padL + chartW, padT + chartH);
+    ctx.lineTo(padL, padT + chartH);
+    ctx.closePath();
+    ctx.fillStyle = color.replace(")", ",0.08)").replace("rgb", "rgba");
+    ctx.fill();
+    // Dots
+    data.forEach((v, i) => {
+      const x = padL + (chartW / (periods.length - 1 || 1)) * i;
+      const y = padT + chartH - (v / maxVal) * chartH;
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.strokeStyle = "#26272D"; ctx.lineWidth = 2; ctx.stroke();
+    });
+  }
+  drawLine(expData, "#E74C3C");
+  drawLine(revData, "#2ECC71");
+
+  // Legend
+  ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillStyle = "#E74C3C"; ctx.fillRect(padL, 4, 8, 8);
+  ctx.fillStyle = "#EEEDE8"; ctx.fillText("Dépenses", padL + 12, 3);
+  ctx.fillStyle = "#2ECC71"; ctx.fillRect(padL + 85, 4, 8, 8);
+  ctx.fillStyle = "#EEEDE8"; ctx.fillText("Revenus", padL + 99, 3);
+}
+
+// ═══ BAR CHART ═══
+function drawBarChart(canvasId, catList) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 32;
+  const h = 220;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+
+  const topCats = catList.slice(0, 6);
+  if (!topCats.length) {
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "14px -apple-system, sans-serif";
+    ctx.textAlign = "center"; ctx.fillText("Aucune donnée", w / 2, h / 2);
+    return;
+  }
+
+  const padL = 10, padR = 10, padT = 15, padB = 50;
+  const chartH = h - padT - padB;
+  const gap = (w - padL - padR) / topCats.length;
+  const barW = Math.min(30, gap * 0.5);
+  const maxVal = topCats[0].amount || 100;
+
+  topCats.forEach((cat, i) => {
+    const x = padL + gap * i + gap / 2 - barW / 2;
+    const barH = (cat.amount / maxVal) * chartH;
+    const y = padT + chartH - barH;
+
+    // Rounded bar
+    const rad = Math.min(4, barW / 2);
+    ctx.beginPath();
+    ctx.moveTo(x, y + rad);
+    ctx.arcTo(x, y, x + barW, y, rad);
+    ctx.arcTo(x + barW, y, x + barW, y + barH, rad);
+    ctx.lineTo(x + barW, padT + chartH);
+    ctx.lineTo(x, padT + chartH);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fill();
+
+    // Value
+    ctx.fillStyle = "#EEEDE8"; ctx.font = "bold 10px -apple-system, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    ctx.fillText(Math.round(cat.amount) + "€", x + barW / 2, y - 3);
+
+    // Label
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "10px -apple-system, sans-serif";
+    ctx.textBaseline = "top";
+    let label = cat.name;
+    if (label.length > 8) label = label.substring(0, 7) + "…";
+    ctx.save(); ctx.translate(x + barW / 2, padT + chartH + 6); ctx.rotate(-0.4);
+    ctx.fillText(label, 0, 0); ctx.restore();
+  });
+}
+
+// ═══ REVENUE VS EXPENSES ═══
+function drawRevExpChart(canvasId, period) {
+  const canvas = document.getElementById(canvasId);
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.parentElement.clientWidth - 32;
+  const h = 220;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  ctx.scale(dpr, dpr); ctx.clearRect(0, 0, w, h);
+
+  const periods = getLastNPeriods(period, 6);
+  const expArr = [], revArr = [];
+  periods.forEach(p => {
+    const txP = TRANSACTIONS.filter(t => txPeriod(t) === p);
+    let exp = 0, rev = 0;
+    txP.forEach(t => { const a = Math.abs(t.amount); if (t.amount > 0) exp += a; else rev += a; });
+    expArr.push(exp); revArr.push(rev);
+  });
+
+  const maxVal = Math.max(...expArr, ...revArr, 100);
+  const padL = 50, padR = 10, padT = 18, padB = 35;
+  const chartW = w - padL - padR, chartH = h - padT - padB;
+  const groupW = chartW / periods.length;
+  const barW = Math.min(16, groupW * 0.3);
+
+  // Grid
+  ctx.strokeStyle = "#303138"; ctx.lineWidth = 0.5;
+  for (let g = 0; g <= 4; g++) {
+    const gy = padT + (chartH / 4) * g;
+    ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "10px -apple-system, sans-serif";
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * g) + "€", padL - 6, gy);
+  }
+
+  periods.forEach((p, i) => {
+    const cx = padL + groupW * i + groupW / 2;
+    // Revenue
+    const revH = (revArr[i] / maxVal) * chartH;
+    ctx.fillStyle = "#2ECC71";
+    ctx.fillRect(cx - barW - 1, padT + chartH - revH, barW, revH);
+    // Expense
+    const expH = (expArr[i] / maxVal) * chartH;
+    ctx.fillStyle = "#E74C3C";
+    ctx.fillRect(cx + 1, padT + chartH - expH, barW, expH);
+    // Label
+    ctx.fillStyle = "#8A8B8E"; ctx.font = "10px -apple-system, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText(p.split("/")[0] + "/" + p.split("/")[1].substring(2), cx, h - padB + 6);
+  });
+
+  // Legend
+  ctx.font = "11px -apple-system, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillStyle = "#2ECC71"; ctx.fillRect(padL, 2, 8, 8);
+  ctx.fillStyle = "#EEEDE8"; ctx.fillText("Rev.", padL + 12, 1);
+  ctx.fillStyle = "#E74C3C"; ctx.fillRect(padL + 50, 2, 8, 8);
+  ctx.fillStyle = "#EEEDE8"; ctx.fillText("Dép.", padL + 62, 1);
+}
+
+// ═══ RECENT TRANSACTIONS ═══
+function renderRecentTx(txList) {
+  const el = document.getElementById("dashRecentTx");
+  const sorted = txList.slice().sort((a, b) =>
+    b.date.split("/").reverse().join("") > a.date.split("/").reverse().join("") ? 1 : -1
+  ).slice(0, 8);
+
+  el.innerHTML = sorted.map(t => {
+    const isExp = t.amount > 0;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <span style="font-size:14px;">${isExp ? "↑" : "↓"}</span>
+      <span style="flex:1;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${escHtml(t.description || catName(t.category_id))}</span>
+      <span style="font-size:12px;color:var(--text-muted);">${t.date}</span>
+      <span style="font-size:13px;font-weight:700;color:${isExp ? 'var(--red)' : 'var(--green)'};">
+        ${formatEuro(Math.abs(t.amount))}</span></div>`;
+  }).join("");
+}
+
+// ═══ GLOBAL SEARCH ═══
+function toggleSearch() {
+  const bar = document.getElementById("globalSearchBar");
+  const input = document.getElementById("globalSearchInput");
+  const results = document.getElementById("gsResults");
+  if (bar.classList.contains("active")) {
+    bar.classList.remove("active");
+    input.value = "";
+    results.classList.remove("visible");
+  } else {
+    bar.classList.add("active");
+    setTimeout(() => input.focus(), 100);
+  }
+}
+
+let _debounce;
+function doSearch() {
+  clearTimeout(_debounce);
+  _debounce = setTimeout(() => {
+    const q = (document.getElementById("globalSearchInput").value || "").trim().toLowerCase();
+    const results = document.getElementById("gsResults");
+    if (q.length < 2) { results.classList.remove("visible"); results.innerHTML = ""; return; }
+
+    let html = "";
+    const txMatches = TRANSACTIONS.filter(t =>
+      (t.description || "").toLowerCase().includes(q) ||
+      catName(t.category_id).toLowerCase().includes(q) ||
+      (t.debtor || "").toLowerCase().includes(q)
+    ).slice(0, 8);
+
+    if (txMatches.length) {
+      html += `<div class="gs-results-group-title">Transactions (${txMatches.length})</div>`;
+      txMatches.forEach(t => {
+        const isExp = t.amount > 0;
+        html += `<div class="gs-result-item">
+          <span class="gs-result-icon">${isExp ? "↑" : "↓"}</span>
+          <div class="gs-result-text">
+            <div class="gs-result-main">${escHtml(t.description || "—")}</div>
+            <div class="gs-result-sub">${escHtml(catName(t.category_id))} · ${t.date}</div>
+          </div>
+          <span class="gs-result-amount" style="color:${isExp ? 'var(--red)' : 'var(--green)'}">${formatEuro(Math.abs(t.amount))}</span>
+        </div>`;
+      });
+    }
+
+    const catMatches = CATEGORIES.filter(c => c.name.toLowerCase().includes(q));
+    if (catMatches.length) {
+      html += `<div class="gs-results-group-title">Catégories (${catMatches.length})</div>`;
+      catMatches.forEach(c => {
+        html += `<div class="gs-result-item">
+          <span class="gs-result-icon">📂</span>
+          <div class="gs-result-text"><div class="gs-result-main">${escHtml(c.name)}</div></div>
+        </div>`;
+      });
+    }
+
+    if (!html) html = `<div style="padding:20px;text-align:center;color:var(--text-muted);">Aucun résultat pour « ${escHtml(q)} »</div>`;
+    results.innerHTML = html;
+    results.classList.add("visible");
+  }, 150);
+}
+
+// ═══ INIT ═══
+buildPeriods();
+renderDashboard();
+
+// Redraw on resize
+window.addEventListener("resize", () => { clearTimeout(window._rr); window._rr = setTimeout(renderDashboard, 200); });
+</script>
+</body>
+</html>
