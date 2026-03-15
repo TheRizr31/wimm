@@ -8143,7 +8143,7 @@ row.style.display = (header && header.classList.contains("collapsed")) ? "none" 
 
 document.querySelectorAll("tr.bucket-header").forEach(h => {
 if (_depassementActive) {
-const hasOver = […document.querySelectorAll(`tr.cat-row[data-bucket="${h.dataset.bucket}"]`)]
+const hasOver = [...document.querySelectorAll(`tr.cat-row[data-bucket="${h.dataset.bucket}"]`)]
 .some(r => r.dataset.isOver === "1");
 h.style.display = hasOver ? "" : "none";
 } else {
@@ -8340,7 +8340,7 @@ container.appendChild(div);
 
 function updateTransfertReste() {
 const total  = Number(document.getElementById("transfertSplitTotal").value) || 0;
-const lines  = […document.querySelectorAll("#transfertSplitLines .transfert-split-line")];
+const lines  = [...document.querySelectorAll("#transfertSplitLines .transfert-split-line")];
 const used   = lines.reduce((s, l) => {
 const inp = l.querySelector("input[type=number]");
 return s + (Number(inp ? inp.value : 0) || 0);
@@ -8374,7 +8374,7 @@ if (_transfertMode === "split") {
 // — MODE VENTILÉ —
 const total = Number(document.getElementById("transfertSplitTotal").value) || 0;
 if (!total) return;
-const lines = […document.querySelectorAll("#transfertSplitLines .transfert-split-line")];
+const lines = [...document.querySelectorAll("#transfertSplitLines .transfert-split-line")];
 const parts = lines.map(l => ({
 catId:  l.querySelector("select").value,
 amount: Number(l.querySelector("input[type=number]").value) || 0,
@@ -8508,7 +8508,7 @@ _prvReceived[t.linked_prevision_id] = (_prvReceived[t.linked_prevision_id] || 0)
 });
 // Enrichir les prévisions avec amount_received + is_fully_received
 const enriched = allPrevisions.map(p => ({
-…p,
+...p,
 amount_received: _prvReceived[p.id] || 0,
 is_fully_received: (_prvReceived[p.id] || 0) >= Number(p.amount) - 0.01
 }));
@@ -8724,7 +8724,7 @@ if (m) m.addEventListener("click", e => { if (e.target === m) _closeLinkTxModal(
 function _confirmLinkTx() {
 if (!_linkTxPrevId || _linkTxSelectedIds.size === 0) return;
 const prevId = _linkTxPrevId;
-const txIds  = […_linkTxSelectedIds];
+const txIds  = [..._linkTxSelectedIds];
 _closeLinkTxModal();
 showSpinner();
 // Un seul appel GAS avec toutes les tx
@@ -9051,7 +9051,7 @@ function _renderDebtorOptions(wrapId, inputEl) {
 const dd     = document.getElementById(wrapId + "Dropdown");
 if (!dd) return;
 const query  = (inputEl ? inputEl.value : "").toLowerCase().trim();
-const _sortDebtors = arr => […arr].sort((a, b) => {
+const _sortDebtors = arr => [...arr].sort((a, b) => {
 const catA = (allCategories.find(x => x.id === a.default_category_id) || {}).name || "zzz";
 const catB = (allCategories.find(x => x.id === b.default_category_id) || {}).name || "zzz";
 const cmp = catA.localeCompare(catB, 'fr', {sensitivity:'base'});
@@ -9159,7 +9159,7 @@ const _debtorHlIdx = {};
 function _debtorHighlight(wrapId, idx) {
 const dd = document.getElementById(wrapId + "Dropdown");
 if (!dd) return;
-const opts = […dd.querySelectorAll(".debtor-option")];
+const opts = [...dd.querySelectorAll(".debtor-option")];
 opts.forEach(o => o.classList.remove("highlighted"));
 _debtorHlIdx[wrapId] = idx;
 if (idx >= 0 && idx < opts.length) {
@@ -9174,7 +9174,7 @@ const input = document.querySelector("#" + wrapId + " input");
 if (!dd) return;
 
 const isOpen = dd.classList.contains("open");
-const opts   = […dd.querySelectorAll(".debtor-option")];
+const opts   = [...dd.querySelectorAll(".debtor-option")];
 let hlIdx    = _debtorHlIdx[wrapId] || -1;
 
 if (e.key === "ArrowDown") {
@@ -9312,7 +9312,7 @@ if (noBucket.length) {
 ```
 
 } else if (type === "buckets") {
-const orderedBkts = […allBuckets].sort((a,b)=>(a.order||0)-(b.order||0));
+const orderedBkts = [...allBuckets].sort((a,b)=>(a.order||0)-(b.order||0));
 orderedBkts.forEach(bkt => {
 const catCount = allCategories.filter(c => c.bucket_id === bkt.id).length;
 const div = document.createElement("div");
@@ -9512,7 +9512,7 @@ return div;
 }
 
 // Afficher les buckets dans l'ordre, avec leurs catégories
-const orderedBuckets = […allBuckets].sort((a,b) => (a.order||0)-(b.order||0));
+const orderedBuckets = [...allBuckets].sort((a,b) => (a.order||0)-(b.order||0));
 orderedBuckets.forEach(bucket => {
 const cats = grouped[bucket.id] || [];
 if (!cats.length) return; // Ne pas afficher les groupes vides
@@ -9807,7 +9807,7 @@ invalidateBudgetCache(); loadBudget(true);
 function _readSmgmtIds(contId) {
 const cont = document.getElementById(contId);
 if (!cont) return [];
-return […cont.querySelectorAll(".smgmt-item[data-id]")].map(el => el.dataset.id);
+return [...cont.querySelectorAll(".smgmt-item[data-id]")].map(el => el.dataset.id);
 }
 
 // (anciennes fonctions _setOrderDirty/_saveSmgmtCatOrder/_moveItem supprimées — remplacées par drag-and-drop)
@@ -9882,7 +9882,7 @@ e.preventDefault();
 el.classList.remove("drag-over");
 if (!_catDragSrc || _catDragSrc === el || _catDragSrc.parentElement !== el.parentElement) return;
 var grp = el.parentElement;
-var items = […grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
+var items = [...grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
 var fromIdx = items.indexOf(_catDragSrc), toIdx = items.indexOf(el);
 if (fromIdx < toIdx) grp.insertBefore(_catDragSrc, el.nextSibling);
 else                  grp.insertBefore(_catDragSrc, el);
@@ -9916,7 +9916,7 @@ e.preventDefault();
 var y = e.touches[0].clientY;
 if (_dragClone) _dragClone.style.top = (y - el.offsetHeight / 2) + "px";
 var grp = el.parentElement;
-var items = […grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
+var items = [...grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
 items.forEach(function(it) { it.classList.remove("drag-over"); });
 var target = items.find(function(it) {
 if (it === _catDragSrc) return false;
@@ -9933,7 +9933,7 @@ if (!_catDragSrc) return;
 el.classList.remove("dragging");
 var y = e.changedTouches[0].clientY;
 var grp = el.parentElement;
-var items = […grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
+var items = [...grp.querySelectorAll(":scope > .smgmt-cat-draggable")];
 items.forEach(function(it) { it.classList.remove("drag-over"); });
 var target = items.find(function(it) {
 if (it === _catDragSrc) return false;
@@ -9979,7 +9979,7 @@ _showOrderFloating("bkt");
 function _saveBktOrderNow() {
 var cont = document.getElementById("bucketsSettingsList2");
 if (!cont) return;
-var ids = […cont.querySelectorAll(".smgmt-bkt-draggable[data-id]")].map(el => el.dataset.id);
+var ids = [...cont.querySelectorAll(".smgmt-bkt-draggable[data-id]")].map(el => el.dataset.id);
 if (!ids.length) return;
 var floatEl = document.getElementById("orderSaveFloating");
 if (floatEl) { floatEl.style.pointerEvents = "none"; floatEl.textContent = "⏳ Sauvegarde…"; }
@@ -10027,7 +10027,7 @@ el.addEventListener("drop", function(e) {
 e.preventDefault();
 el.classList.remove("drag-over");
 if (!_bktDragSrc || _bktDragSrc === el) return;
-var items = […container.querySelectorAll(".smgmt-bkt-draggable")];
+var items = [...container.querySelectorAll(".smgmt-bkt-draggable")];
 var fromIdx = items.indexOf(_bktDragSrc);
 var toIdx   = items.indexOf(el);
 if (fromIdx < toIdx) container.insertBefore(_bktDragSrc, el.nextSibling);
@@ -10072,7 +10072,7 @@ if (_dragClone) {
 _dragClone.style.top = (y - el.offsetHeight / 2) + "px";
 }
 // Trouver la cible sous le doigt
-var items = […container.querySelectorAll(".smgmt-bkt-draggable")];
+var items = [...container.querySelectorAll(".smgmt-bkt-draggable")];
 items.forEach(function(it) { it.classList.remove("drag-over"); });
 var target = items.find(function(it) {
 if (it === _bktDragSrc) return false;
@@ -10088,7 +10088,7 @@ if (_dragClone) { document.body.removeChild(_dragClone); _dragClone = null; }
 if (!_bktDragSrc) return;
 el.classList.remove("dragging");
 var y = e.changedTouches[0].clientY;
-var items = […container.querySelectorAll(".smgmt-bkt-draggable")];
+var items = [...container.querySelectorAll(".smgmt-bkt-draggable")];
 items.forEach(function(it) { it.classList.remove("drag-over"); });
 var target = items.find(function(it) {
 if (it === _bktDragSrc) return false;
@@ -10134,7 +10134,7 @@ function renderBucketsList() {
 const container = document.getElementById("bucketsSettingsList");
 if (!container) return;
 container.innerHTML = "";
-const ordered = […allBuckets].sort((a,b)=>(a.order||0)-(b.order||0));
+const ordered = [...allBuckets].sort((a,b)=>(a.order||0)-(b.order||0));
 
 ordered.forEach((bkt, idx) => {
 const div = document.createElement("div");
@@ -10205,7 +10205,7 @@ if (!allDebtors.length) {
 container.innerHTML = '<p style="color:#ccc;font-size:13px;text-align:center;padding:12px 0;">Aucun bénéficiaire / débiteur</p>';
 } else {
 // Tri par catégorie puis alphabétique
-const _sortedDL = […allDebtors].sort((a, b) => {
+const _sortedDL = [...allDebtors].sort((a, b) => {
 const catA = (allCategories.find(x => x.id === a.default_category_id) || {}).name || "zzz";
 const catB = (allCategories.find(x => x.id === b.default_category_id) || {}).name || "zzz";
 const cmp = catA.localeCompare(catB, 'fr', {sensitivity:'base'});
