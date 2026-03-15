@@ -4867,17 +4867,17 @@ function init() {
 
   showSpinner();
 
-  // Sécurité : si GAS ne répond pas dans 20s, on affiche une erreur
+  // Sécurité : si GAS ne répond pas dans 45s, on affiche une erreur
   _initTimeout = setTimeout(() => {
     hideSpinner();
     const _sp = document.getElementById("splashScreen");
     if (_sp) { _sp.classList.add("hidden"); setTimeout(() => { if(_sp.parentNode) _sp.remove(); }, 600); }
     _showInitError(
-      "Timeout — Google Apps Script n'a pas répondu en 20 secondes.<br>" +
+      "Timeout — Google Apps Script n'a pas répondu en 45 secondes.<br>" +
       "Causes possibles : déploiement non publié, quota GAS dépassé, " +
       "ou la feuille AppMeta / getInitialData() est absente du script."
     );
-  }, 20000);
+  }, 45000);
 
   // Vérification préventive : google.script.run disponible ?
   if (typeof google === "undefined" || typeof google.script === "undefined") {
@@ -4895,6 +4895,9 @@ function init() {
       .withSuccessHandler(data => {
         clearTimeout(_initTimeout);
         hideSpinner();
+        // Nettoyer le bandeau d'erreur si le succès arrive après un timeout
+        const _oldBanner = document.getElementById("_initErrorBanner");
+        if (_oldBanner) _oldBanner.remove();
         if (!data) {
           _showInitError("La fonction getInitialData() a renvoyé une valeur vide (null).<br>Vérifie que le script est bien déployé et que la feuille Google Sheets est accessible.");
           return;

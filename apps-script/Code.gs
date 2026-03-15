@@ -26,8 +26,13 @@ return "V2-OK — getInitialData / addDebtor / addCategory / addBucket présents
 }
 
 // ================= UTILITIES =================
+let _ssCache = null;
+function _ss() {
+  if (!_ssCache) _ssCache = SpreadsheetApp.getActiveSpreadsheet();
+  return _ssCache;
+}
 function getSheet(name) {
-return SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+return _ss().getSheetByName(name);
 }
 function generateId(prefix) {
 return prefix + "-" + Utilities.getUuid();
@@ -306,7 +311,7 @@ const cats = _getCategories();
 return { budget: true, period: data.period, transactions: _getAllTransactions(cats) };
 }
 case "addPrevision": {
-const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const ps = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (ps) {
 const pd = ps.getDataRange().getValues();
 const ph = pd[0]; const piIdx = ph.indexOf("id");
@@ -318,7 +323,7 @@ _clearUndo();
 { const _ua = _getCategories(); return { previsions: _getAllPrevisions(_ua), transactions: _getAllTransactions(_ua) }; }
 }
 case "updatePrevision": {
-const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const ps = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (ps) {
 const pd = ps.getDataRange().getValues();
 const ph = pd[0]; const piIdx = ph.indexOf("id");
@@ -338,7 +343,7 @@ _clearUndo();
 { const _uc = _getCategories(); return { previsions: _getAllPrevisions(_uc), transactions: _getAllTransactions(_uc) }; }
 }
 case "deletePrevision": {
-const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const ps = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (ps) {
 const ph = ps.getRange(1,1,1,ps.getLastColumn()).getValues()[0];
 const row = ph.map(h => data.oldRow[h] !== undefined ? data.oldRow[h] : "");
@@ -616,7 +621,7 @@ function addProject(name, target) {
 const planId = _getCurrentPlanId();
 let sheet = getSheet(SHEETS.PROJECTS);
 if (!sheet) {
-sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet(SHEETS.PROJECTS);
+sheet = _ss().insertSheet(SHEETS.PROJECTS);
 sheet.getRange(1, 1, 1, 5).setValues([["id","name","target","allocated","plan_id"]]);
 }
 const id  = "PRJ" + Date.now();
@@ -2114,7 +2119,7 @@ sheet.getRange(lr, periodIdx+1).setNumberFormat("@");
 });
 const prevItems = items.filter(i => i.type === "prevision");
 if (prevItems.length) {
-const ss = SpreadsheetApp.getActiveSpreadsheet();
+const ss = _ss();
 let ps = ss.getSheetByName(SHEETS.PREVISIONS);
 if (!ps) {
 ps = ss.insertSheet(SHEETS.PREVISIONS);
@@ -2150,7 +2155,7 @@ return _safeReturnTx(_getAllTransactions(_getCategories()));
 
 // ================= PREVISIONS =================
 function _getAllPrevisions(categories, planId) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const data = sheet.getDataRange().getValues();
 if (data.length < 2) return [];
@@ -2211,7 +2216,7 @@ return _getAllPrevisions(_getCategories());
 
 function addPrevision(form) {
 const sheetName = SHEETS.PREVISIONS;
-const ss = SpreadsheetApp.getActiveSpreadsheet();
+const ss = _ss();
 let sheet = ss.getSheetByName(sheetName);
 if (!sheet) {
 sheet = ss.insertSheet(sheetName);
@@ -2253,7 +2258,7 @@ return _getAllPrevisions(categories);
 }
 
 function updatePrevision(form) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const data = sheet.getDataRange().getValues();
 const headers = data[0];
@@ -2290,7 +2295,7 @@ return _getAllPrevisions(categories);
 }
 
 function markPrevisionReceived(previsionId, txId) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const data = sheet.getDataRange().getValues();
 let headers = data[0].map(String);
@@ -2391,7 +2396,7 @@ return { transactions: _getAllTransactions(cats, _getCurrentPlanId()), prevision
 }
 
 function unlinkPrevision(previsionId) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const lastCol = sheet.getLastColumn();
 const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
@@ -2413,7 +2418,7 @@ return _getAllPrevisions(_getCategories());
 }
 
 function closePrevision(previsionId) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const data = sheet.getDataRange().getValues();
 let headers = data[0].map(String);
@@ -2436,7 +2441,7 @@ return _getAllPrevisions(_getCategories(), _getCurrentPlanId());
 }
 
 function deletePrevision(id) {
-const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+const sheet = _ss().getSheetByName(SHEETS.PREVISIONS);
 if (!sheet) return [];
 const data = sheet.getDataRange().getValues();
 const headers = data[0];
