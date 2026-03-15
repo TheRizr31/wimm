@@ -11757,21 +11757,24 @@ function showDashboard() {
 }
 
 function _initDashboard() {
-  // Build period select from allPeriods
+  // Build period select from allPeriods (tableau d'objets {id, label})
   const sel = document.getElementById("dashPeriodSelect");
   if (!sel) return;
   const periods = (allPeriods || []).slice();
   sel.innerHTML = "";
   periods.forEach(function(p) {
     var o = document.createElement("option");
-    o.value = p; o.textContent = p;
+    var pid   = (typeof p === "object" && p !== null) ? p.id   : p;
+    var plabel = (typeof p === "object" && p !== null) ? p.label : p;
+    o.value = pid; o.textContent = plabel;
     sel.appendChild(o);
   });
   // Default to current month
   var now = new Date();
   var curP = String(now.getMonth()+1).padStart(2,"0") + "/" + now.getFullYear();
-  if (periods.indexOf(curP) >= 0) sel.value = curP;
-  else if (periods.length) sel.value = periods[0];
+  var periodIds = periods.map(function(p) { return (typeof p === "object" && p !== null) ? p.id : p; });
+  if (periodIds.indexOf(curP) >= 0) sel.value = curP;
+  else if (periods.length) sel.value = periodIds[0];
   _dashCurrentPeriod = sel.value;
   _renderDashboard();
 }

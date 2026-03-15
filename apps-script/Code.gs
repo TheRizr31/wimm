@@ -391,7 +391,14 @@ try {
   assignCatId  = _up.getProperty("pref_assignCatId_"  + currentPlanId) || _up.getProperty("pref_assignCatId")  || "";
 } catch(e) {}
 
-const totalSavings = _getTotalSavings(currentPlanId, savingsCatId);
+// Calculer totalSavings directement depuis transactions déjà chargées (évite relecture du sheet Banque)
+let totalSavings = 0;
+transactions.forEach(function(t) {
+  if (String(t.category_id || "") === String(savingsCatId)) {
+    totalSavings += Number(t.amount) || 0;
+  }
+});
+totalSavings = Math.round(totalSavings * 100) / 100;
 
 // Sérialisation explicite — évite tout objet GAS non-sérialisable
 return {
@@ -898,25 +905,28 @@ SHEETS.DEBTORS
 sheetKeys.forEach(function(key) {
 const sheet = getSheet(key);
 if (!sheet) return;
-const data = sheet.getDataRange().getValues();
-if (!data.length) return;
-const h = data[0];
+const lastRow = sheet.getLastRow();
+if (lastRow < 1) return;
+
+// Lire seulement le header (1 ligne) pour savoir si plan_id existe
+const h = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 let planIdx = h.indexOf("plan_id");
 
 if (planIdx < 0) {
   // Colonne absente — créer en en-tête + remplir toutes les lignes d'un coup
   planIdx = h.length;
   sheet.getRange(1, planIdx + 1).setValue("plan_id");
-  if (data.length > 1) {
-    sheet.getRange(2, planIdx + 1, data.length - 1, 1)
-      .setValues(Array(data.length - 1).fill([defaultPlanId]));
+  if (lastRow > 1) {
+    sheet.getRange(2, planIdx + 1, lastRow - 1, 1)
+      .setValues(Array(lastRow - 1).fill([defaultPlanId]));
   }
-} else {
-  // Colonne existe — repérer les lignes vides et les écrire en un seul batch
+} else if (lastRow > 1) {
+  // Colonne existe — lire uniquement la colonne plan_id (pas tout le sheet)
+  const colData = sheet.getRange(2, planIdx + 1, lastRow - 1, 1).getValues();
   const emptyRows = [];
-  for (let i = 1; i < data.length; i++) {
-    const v = data[i][planIdx];
-    if (v === "" || v === null || v === undefined) emptyRows.push(i + 1);
+  for (let i = 0; i < colData.length; i++) {
+    const v = colData[i][0];
+    if (v === "" || v === null || v === undefined) emptyRows.push(i + 2);
   }
   if (!emptyRows.length) return;
   // Grouper les lignes consécutives pour minimiser les appels
