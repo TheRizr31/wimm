@@ -51,7 +51,6 @@
       --btn-primary-shadow: 0 2px 12px rgba(251,215,47,0.3);
     }
 
-```
 /* ═══ THÈME ZEN & ORGANIQUE ═══ */
 body.theme-zen {
   --bg:               #FBFBF9;
@@ -1091,7 +1090,6 @@ input[list] { background-image:none; padding-right:14px; -webkit-appearance:none
 /* ─── Drawer header fintech WIMM ─── */
     /* ─── Drawer WIMM ─── */
 .drawer-header {
-```
 
 padding: calc(env(safe-area-inset-top,0px) + 10px) 12px 12px;
 background: var(--bg);
@@ -1223,7 +1221,6 @@ z-index: 100;
 display: flex;
 }
 
-```
 /* ===== SETTINGS MGMT MODAL ===== */
 #settingsMgmtModal .modal-large { border-radius: 24px; }
 .smgmt-item {
@@ -1342,7 +1339,6 @@ input[type=range] { height: 6px; cursor: pointer; border: none; }
 
 /* ─── Settings Page ─── */
     .settings-page {
-```
 
 display: none; flex-direction: column;
 background: var(--sheet);
@@ -1376,7 +1372,6 @@ TRANSFORMATION EN BARRE LATÉRALE (RAIL MINIATURE)
 .app-header .header-undo-area { flex: 0; }
 .global-search-bar { background: transparent !important; padding: 0 20px 8px !important; }
 
-```
 /* Décalage de l'app pour faire de la place au volet mini */
 .sheet { padding-top: max(20px, env(safe-area-inset-top, 20px)); }
 .app { margin-left: 70px; transition: margin-left 0.28s cubic-bezier(0.4,0,0.2,1); }
@@ -1444,7 +1439,6 @@ body.drawer-pinned-mode .selection-bar {
 .drawer-menu-item { padding: 12px 0; justify-content: center; }
 .drawer.open .drawer-menu-item, .drawer.drawer-pinned .drawer-menu-item { padding: 13px 12px; justify-content: flex-start; }
 .drawer-menu-icon { margin: 0; font-size: 27px; }
-```
 
 } /* fin @media min-width: 1024px */
 
@@ -1721,7 +1715,6 @@ touch-action: pan-y;
 .prevision-row button { font-size: 12px; padding: 5px 8px; white-space: nowrap; }
 }
 
-```
 /* ══ BUDGET sticky ══ */
 #budgetSection { display:flex; flex-direction:column; overflow:hidden; height:100%; }
 .budget-sticky-top {
@@ -1893,7 +1886,6 @@ height: 48px;
 margin-right: 1px;     /* Réduit de 8px à 4px pour rapprocher le texte */
 vertical-align: middle;
 object-fit: contain;
-```
 
 }
 
@@ -1905,7 +1897,6 @@ padding: 6px 12px;     /* Vous pouvez ajuster le padding si le bouton devient tr
 gap: 0px;              /* On force l'écart à 0 car on gère la distance avec margin-right */
 }
 
-```
 /* ─── HISTORIQUE CATÉGORIE ─────────────────────────── */
 .cat-history-overlay {
   align-items: flex-end !important;
@@ -3308,7 +3299,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
   .tx-menu { display: none !important; }
 }
 </style>
-```
 
 </head>
 
@@ -3347,7 +3337,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
 
   <div class="sheet" id="mainSheet">
 
-```
 <div id="transactionsSection">
   <div id="txSuccess" class="success-msg">Transaction enregistrée ✓</div>
   <div class="segment">
@@ -3416,7 +3405,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
 </div>
 
 <div id="budgetSection" style="display:none;">
-```
 
   <div id="budgetOverAlert" style="display:none;background:rgba(231,76,60,0.15);color:var(--red-alert);border:1px solid rgba(231,76,60,0.3);border-radius:10px;padding:8px 14px;margin:8px 12px 0;font-size:13px;font-weight:600;cursor:pointer;" onclick="document.getElementById('budgetOverAlert').style.display='none'"></div>
       <!-- Zone figée haut -->
@@ -3467,7 +3455,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
       </div>
     </div>
 
-```
 <div id="historySection" style="display:none;">
   <!-- Zone figée haut -->
   <div class="history-sticky-top">
@@ -3672,13 +3659,11 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
 </div>
 
 <!-- ══ PAGE ÉPARGNE (dans mainSheet) ══ -->
-```
 
   <!-- ══════════════════════════════════════════
        PAGE ÉPARGNE
   ══════════════════════════════════════════ -->
 
-```
 <div id="savings-page" style="display:none;">
 
 <!-- Header -->
@@ -3710,11 +3695,9 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
 <div id="savingsSaveBar" class="savings-save-bar" style="display:none;">
   <button class="btn-savings-save" onclick="_saveSavingsAllocations()">✓ Enregistrer la répartition</button>
 </div>
-```
 
   </div>
 
-```
 <!-- Modal nouveau projet -->
 <div id="addProjectModal" class="modal-overlay">
 <div class="modal-sheet">
@@ -3733,7 +3716,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
     <button class="btn-primary" style="flex:2;" onclick="_confirmAddProject()">Créer</button>
   </div>
 </div>
-```
 
   </div>
 
@@ -3963,7 +3945,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
         style="width:100%;box-sizing:border-box;padding:8px 10px;border:1.5px solid rgba(251,215,47,0.35);border-radius:10px;font-size:13px;font-weight:700;background:rgba(251,215,47,0.08);color:var(--primary,#FBD72F);cursor:pointer;">
       </select>
 
-```
 </div>
 <div class="drawer-section-label">Navigation</div>
 <button class="drawer-menu-item" onclick="closeDrawer(); showBudget();">
@@ -4056,7 +4037,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
   </div>
   <span class="drawer-menu-arrow">›</span>
 </button>
-```
 
   </div>
 </div>
@@ -4276,7 +4256,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
     <p id="budgetCatModalGroup" style="font-size:13px;color:#aaa;margin:0 0 4px;"></p>
     <p style="font-size:12px;color:#bbb;margin:0 0 16px;">Pour modifier ou supprimer, rendez-vous dans ⚙️ Paramètres.</p>
 
-```
 <!-- Renommer -->
 <div style="margin-bottom:14px;">
   <input id="budgetCatModalRename" type="text" placeholder="Renommer…"
@@ -4296,7 +4275,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
   <button class="btn-cancel" onclick="closeBudgetCatModal()">Annuler</button>
   <button class="btn-primary" style="border-radius:14px;" onclick="_renameCatFromBudget()">Enregistrer</button>
 </div>
-```
 
   </div>
 </div>
@@ -4318,7 +4296,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
       </div>
     </div>
 
-```
 <div style="width:100%;box-sizing:border-box;">
   <label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted,#888);display:block;margin-bottom:6px;">Nom du plan</label>
   <input id="newPlanName" type="text" placeholder="Ex : Couple, Pro, Voyage…"
@@ -4356,7 +4333,6 @@ body.theme-fintech .btn-budget-add { color: #FFFFFF !important; background: var(
   <button class="btn-cancel" onclick="closeNewPlanModal()">Annuler</button>
   <button class="btn-primary" id="newPlanBtn" onclick="_createNewPlan()">Créer le plan</button>
 </div>
-```
 
   </div>
 </div>
@@ -7758,12 +7734,10 @@ function _toggleCatNote(btn, catId, period) {
     </div>
     <textarea id="_catNoteTextarea" placeholder="Ajouter une note pour ce mois…">${currentNote}</textarea>
 
-```
 <div class="cat-note-popup-actions">
   <button class="cat-note-btn-clear" onclick="_clearCatNote('${catId}','${period}')">Effacer</button>
   <button class="cat-note-btn-save"  onclick="_saveCatNote('${catId}','${period}')">Enregistrer</button>
 </div>
-```
 
 `;
 
@@ -8384,7 +8358,6 @@ amount: Number(l.querySelector("input[type=number]").value) || 0,
 })).filter(p => p.catId && p.amount > 0);
 if (!parts.length) return;
 
-```
 closeTransfertModal();
 showSpinner();
 
@@ -8417,7 +8390,6 @@ _gas()
   })
   .withFailureHandler(onError)
   .saveBudget(period, srcId, srcBudget);
-```
 
 } else {
 // — MODE SIMPLE —
@@ -8426,7 +8398,6 @@ const amount = Number(document.getElementById("transfertAmount").value);
 if (!amount || amount <= 0) return;
 if (!destId) { showInfoModal("⚠️ Choisissez une catégorie destination."); return; }
 
-```
 const srcBudget  = isDeficit ? _transfertSrc.budgeted + amount : _transfertSrc.budgeted - amount;
 const destCat    = allCats.find(c => c.category_id === destId);
 const destBudget = isDeficit ? (destCat ? destCat.budgeted - amount : 0) : (destCat ? destCat.budgeted + amount : 0);
@@ -8447,7 +8418,6 @@ _gas()
   })
   .withFailureHandler(onError)
   .saveBudget(period, srcId, srcBudget);
-```
 
 }
 }
@@ -8546,7 +8516,6 @@ if (received.length) {
 const section = document.createElement("div");
 section.className = "prev-received-section";
 
-```
 const toggle = document.createElement("div");
 toggle.id = "prevReceivedToggle";
 toggle.className = "prev-received-toggle" + (_receivedCollapsed ? " collapsed" : "");
@@ -8566,7 +8535,6 @@ received.forEach(p => list.appendChild(_buildPrevRow(p)));
 section.appendChild(list);
 
 container.appendChild(section);
-```
 
 }
 
@@ -8654,7 +8622,6 @@ return;
 }
 list.style.display = ""; none.style.display = "none";
 
-```
 // Transactions liables
 entries.forEach(t => {
   const alreadyLinked = t.linked_prevision_id === prevId;
@@ -8706,7 +8673,6 @@ if (skipped.length) {
   list.appendChild(sepDiv);
   list.appendChild(skippedContainer);
 }
-```
 
 }
 _renderLinkList();
@@ -9256,7 +9222,6 @@ grouped[cat.bucket_id].push(cat);
 } else { noBucket.push(cat); }
 });
 
-```
 function _makeCatItemSmgmt(cat) {
   const div = document.createElement("div");
   div.className = "smgmt-item smgmt-item-clickable smgmt-cat-draggable";
@@ -9312,7 +9277,6 @@ if (noBucket.length) {
   noBucket.forEach((cat,i) => body.appendChild(_makeCatItemSmgmt(cat, i, noBucket.length)));
   container.appendChild(body);
 }
-```
 
 } else if (type === "buckets") {
 const orderedBkts = [...allBuckets].sort((a,b)=>(a.order||0)-(b.order||0));
@@ -9342,7 +9306,6 @@ toolbar.style.cssText = "display:flex;align-items:center;justify-content:space-b
 toolbar.innerHTML = ` <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);cursor:pointer;font-weight:600;"> <input type="checkbox" id="debtorSelectAll" onchange="_toggleAllDebtors(this.checked)" style="width:16px;height:16px;accent-color:var(--primary);"> Tout sélectionner </label> <button id="debtorBulkDelBtn" style="display:none;background:var(--red-alert);color:white;border:none;border-radius:14px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;" onclick="_bulkDeleteDebtors()">🗑 Supprimer</button>`;
 container.appendChild(toolbar);
 
-```
   // Tri par catégorie puis alphabétique
   const sortedDebtors = [...allDebtors].sort((a, b) => {
     const catA = (allCategories.find(x => x.id === a.default_category_id) || {}).name || "zzz";
@@ -9379,7 +9342,6 @@ container.appendChild(toolbar);
     container.appendChild(div);
   });
 }
-```
 
 }
 }
@@ -9520,7 +9482,6 @@ orderedBuckets.forEach(bucket => {
 const cats = grouped[bucket.id] || [];
 if (!cats.length) return; // Ne pas afficher les groupes vides
 
-```
 const groupEl = document.createElement("div");
 groupEl.className = "settings-bucket-group";
 
@@ -9542,7 +9503,6 @@ bodyEl.className = "settings-bucket-items";
 cats.forEach((cat,i) => bodyEl.appendChild(makeCatItem(cat, i, cats.length)));
 groupEl.appendChild(bodyEl);
 container.appendChild(groupEl);
-```
 
 });
 
@@ -10362,7 +10322,6 @@ item.style.cssText = "display:flex;align-items:center;gap:10px;padding:13px 14px
 "border:1.5px solid " + (isActive ? "rgba(251,215,47,0.35)" : "var(--segment,#303138)") + ";" +
 "border-radius:13px;background:" + (isActive ? "rgba(251,215,47,0.06)" : "var(--card,#26272D)") + ";";
 
-```
 // Icône
 const iconDiv = document.createElement("div");
 iconDiv.style.cssText = "width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;" +
@@ -10401,7 +10360,6 @@ if (!isActive && _allPlans.length > 1) {
   item.appendChild(btnDel);
 }
 container.appendChild(item);
-```
 
 });
 }
@@ -10741,14 +10699,12 @@ openDrawer();
 }
 }
 
-```
 function forceCloseDrawer() {
   if (document.body.classList.contains("drawer-pinned-mode")) togglePin();
   closeDrawer();
 }
 
 /* openDrawer / closeDrawer / togglePin → définitions globales plus haut */
-```
 
 function toggleProjectionDetail() {
 const detail = document.getElementById("projectionDetail");
@@ -10838,7 +10794,6 @@ const alloc  = _sliderDraft[p.id] || 0;
 const pct    = total > 0 ? Math.round(alloc / total * 100) : 0;
 const tgtPct = p.target > 0 ? Math.min(100, Math.round(alloc / p.target * 100)) : null;
 
-```
 const card = document.createElement('div');
 card.className = 'savings-project-card' + (alloc !== p.allocated ? ' dirty' : '');
 card.id = 'proj-card-' + p.id;
@@ -10903,7 +10858,6 @@ amtInput.addEventListener('blur', () => {
 });
 
 list.appendChild(card);
-```
 
 });
 
@@ -10962,7 +10916,6 @@ projects.forEach(p => {
 const alloc = _sliderDraft[p.id] || 0;
 const pct   = total > 0 ? Math.round(alloc / total * 100) : 0;
 
-```
 const allocEl  = document.getElementById('proj-alloc-' + p.id);
 const pctEl    = document.getElementById('proj-pct-'   + p.id);
 const sliderEl = document.getElementById('slider-'     + p.id);
@@ -10992,7 +10945,6 @@ if (assignBtn) {
   assignBtn.style.display = unalloc > 0.01 ? '' : 'none';
   assignBtn.textContent   = '＋ ' + formatEuro(unalloc);
 }
-```
 
 });
 
