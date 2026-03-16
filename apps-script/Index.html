@@ -2760,164 +2760,173 @@
 ══════════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
 
-  /* ── APP SHELL ───────────────────────────────────────── */
-  .sheet { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); }
+  /* ── GLOBAL — prevent any horizontal overflow ────────── */
+  html, body, .app, .sheet { overflow-x: hidden !important; }
+  * { -webkit-tap-highlight-color: transparent; }
 
-  /* ── HEADER — compact ────────────────────────────────── */
-  .app-header {
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    padding-top: env(safe-area-inset-top, 0px);
+  /* ── APP SHELL ───────────────────────────────────────── */
+  .sheet {
+    padding: 0 !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px) !important;
   }
+
+  /* ── HEADER ──────────────────────────────────────────── */
+  .app-header { padding-top: env(safe-area-inset-top, 0px); }
   .header-inner { padding: 10px 16px; }
   .app-title { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
   .btn-settings-open { width: 38px; height: 38px; border-radius: 12px; font-size: 22px; }
 
-  /* ── BOTTOM NAV — full-width iOS tab bar layout ──────── */
+  /* ── BOTTOM NAV — floating pill, adapted for mobile ──── */
   .bottom-nav {
-    position: fixed !important;
-    bottom: 0 !important; left: 0 !important; right: 0 !important;
-    transform: none !important;
-    border-radius: 0 !important;
-    padding: 6px 0 calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
-    min-width: unset !important; max-width: unset !important; width: 100% !important;
-    backdrop-filter: saturate(180%) blur(20px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
-    gap: 0 !important;
+    width: calc(100% - 24px) !important; max-width: 520px !important; min-width: unset !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6px) !important;
+    border-radius: 22px !important;
+    padding: 4px !important;
+    gap: 2px !important;
   }
-
   .nav-item {
     flex: 1 !important; flex-direction: column !important; align-items: center !important;
-    gap: 2px !important; padding: 4px 2px 2px !important;
-    border-radius: 0 !important; background: none !important; box-shadow: none !important;
-    font-size: 10px !important; font-weight: 500 !important; letter-spacing: 0 !important;
-    transition: color 0.15s !important;
+    gap: 2px !important; padding: 6px 2px 4px !important;
+    font-size: 10px !important; font-weight: 500 !important;
+    border-radius: 16px !important;
     width: auto !important; min-width: 0 !important;
   }
-  .nav-item span { color: inherit !important; }
-  .nav-item .nav-icon { font-size: 24px !important; line-height: 1.1 !important; }
-  .nav-item .nav-icon svg { width: 24px !important; height: 24px !important; }
-  .nav-item:active { transform: none !important; opacity: 0.6; }
-
-  /* Active tab — no background pill, just tint */
-  .nav-item.active { background: none !important; box-shadow: none !important; }
+  .nav-item .nav-icon { font-size: 22px !important; line-height: 1.1 !important; }
+  .nav-item .nav-icon svg { width: 22px !important; height: 22px !important; }
+  .nav-item:active { opacity: 0.7; }
 
   /* Réglages tab (5th) visible mobile only */
   .nav-item-settings-mobile { display: flex !important; }
 
-  /* ── SAISIE — card layout ────────────────────────────── */
-  #transactionsSection .group {
-    border-radius: 16px; margin: 0 16px; padding: 16px;
-  }
-  #transactionsSection > .segment { margin: 0 16px; border-radius: 12px; }
-  .simple-form-row .input-euro-wrap {
-    border-radius: 16px !important;
-    padding: 14px 20px !important; margin: 0 16px;
-  }
+  /* ── SAISIE ──────────────────────────────────────────── */
+  #transactionsSection { padding: 0 12px; }
+  #transactionsSection .group { border-radius: 14px; padding: 14px; }
+  .segment { border-radius: 10px !important; padding: 3px !important; gap: 3px !important; }
+  .segment button { border-radius: 8px !important; padding: 9px 4px !important; font-size: 15px !important; font-weight: 600 !important; }
   #simpleAmount {
-    font-size: 42px !important; font-weight: 700 !important;
+    font-size: 38px !important; font-weight: 700 !important;
     letter-spacing: -1px; font-variant-numeric: tabular-nums;
   }
-  .input-euro-suffix { font-size: 28px !important; font-weight: 600 !important; }
-  .segment { border-radius: 12px !important; padding: 3px !important; gap: 3px !important; }
-  .segment button { border-radius: 9px !important; padding: 9px 4px !important; font-size: 15px !important; font-weight: 600 !important; }
-  #simpleCategory { border-radius: 14px !important; padding: 14px !important; font-size: 16px !important; margin: 0 16px; }
-  .saisie-row-top { margin: 0 16px; }
+  .input-euro-suffix { font-size: 26px !important; font-weight: 600 !important; }
+  #simpleCategory { border-radius: 12px !important; padding: 12px !important; font-size: 16px !important; }
   .form-actions .btn-primary {
-    border-radius: 14px !important; padding: 16px !important;
+    border-radius: 12px !important; padding: 14px !important;
     font-size: 17px !important; font-weight: 600 !important;
-    letter-spacing: -0.2px; margin: 0 16px;
   }
-  .form-actions .btn-dark { border-radius: 14px !important; font-size: 15px !important; }
+  .form-actions .btn-dark { border-radius: 12px !important; font-size: 15px !important; }
 
-  /* ── BUDGET — card layout ────────────────────────────── */
-  .budget-sticky-top { padding: 8px 16px 0 !important; border-bottom: none !important; }
-  .budget-period-bar select { border-radius: 12px !important; font-size: 16px !important; padding: 10px 12px !important; }
-  .disponible-card { border-radius: 16px !important; padding: 16px 20px !important; }
-  .disponible-card-label { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; }
-  .disponible-card-value { font-size: 32px !important; font-weight: 800 !important; letter-spacing: -1px !important; }
-  .budget-scroll-body { padding: 8px 16px calc(env(safe-area-inset-bottom,0px) + 100px) !important; }
-  .budget-table { border-radius: 16px !important; overflow: hidden !important; }
-  .budget-table thead th { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; padding: 10px 6px 8px !important; }
-  .cat-row td { padding: 12px 6px !important; }
-  .bucket-header { border-radius: 0 !important; }
-  .budget-action-bar { gap: 8px !important; padding: 4px 0 6px !important; }
+  /* ── BUDGET ──────────────────────────────────────────── */
+  .budget-sticky-top { padding: 8px 12px 0 !important; }
+  .budget-period-bar select { border-radius: 10px !important; font-size: 16px !important; padding: 10px 12px !important; }
+  .disponible-card { border-radius: 14px !important; padding: 14px 16px !important; }
+  .disponible-card-label { font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; }
+  .disponible-card-value { font-size: 28px !important; font-weight: 800 !important; letter-spacing: -0.5px !important; }
+  .budget-scroll-body { padding: 8px 0 calc(env(safe-area-inset-bottom,0px) + 90px) !important; }
+  .budget-action-bar { gap: 8px !important; padding: 4px 12px 6px !important; }
   .budget-action-bar button,
   .budget-action-bar .btn-fold,
-  .budget-action-bar .btn-sm { border-radius: 10px !important; padding: 7px 14px !important; font-size: 13px !important; }
+  .budget-action-bar .btn-sm { border-radius: 10px !important; padding: 7px 12px !important; font-size: 13px !important; }
   .btn-budget-add { width: 36px !important; height: 36px !important; }
 
-  /* ── BANQUE — transaction list ───────────────────────── */
-  .history-sticky-top { padding: 8px 16px 8px !important; border-bottom: none !important; }
-  .soldes-bar { gap: 6px !important; margin-bottom: 4px; }
-  .solde-card { border-radius: 14px !important; padding: 10px 8px !important; }
+  /* Budget table — full width, anchored, no float feel */
+  .budget-table {
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    table-layout: fixed !important; width: 100% !important;
+  }
+  .budget-table thead th {
+    font-size: 10px !important; text-transform: uppercase !important;
+    letter-spacing: 0.3px !important; padding: 10px 6px 8px !important;
+    position: sticky !important; top: 0 !important; z-index: 5 !important;
+  }
+  .cat-row td { padding: 11px 6px !important; }
+  .bucket-header { border-radius: 0 !important; }
+
+  /* ── BANQUE — transactions ───────────────────────────── */
+  .history-sticky-top { padding: 8px 12px 8px !important; }
+  .soldes-bar { gap: 6px !important; margin-bottom: 4px; padding: 0 !important; }
+  .solde-card { border-radius: 12px !important; padding: 8px 6px !important; }
   .solde-label { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; }
-  .solde-value { font-size: 15px !important; font-weight: 800 !important; }
-  .history-toolbar { gap: 8px !important; }
-  .history-toolbar select { border-radius: 12px !important; font-size: 15px !important; padding: 10px 12px !important; }
+  .solde-value { font-size: 14px !important; font-weight: 800 !important; }
+  .history-toolbar { gap: 6px !important; }
+  .history-toolbar select { border-radius: 10px !important; font-size: 15px !important; padding: 10px 10px !important; }
   .history-filters-block input,
-  .history-filters-block select { border-radius: 12px !important; font-size: 15px !important; padding: 11px 14px !important; }
-  .filter-uncleared { padding: 8px 4px !important; }
+  .history-filters-block select { border-radius: 10px !important; font-size: 15px !important; padding: 10px 12px !important; }
+  .filter-uncleared { padding: 6px 4px !important; }
   .filter-uncleared label { font-size: 14px !important; }
-  .history-scroll-body { padding: 0 16px calc(env(safe-area-inset-bottom,0px) + 100px) !important; }
-  .tx-table { border-radius: 16px !important; overflow: hidden !important; }
-  .tx-table thead th { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; padding: 10px 5px 8px !important; }
-  .tx-table td { padding: 12px 5px !important; }
-  .td-cat { font-size: 15px !important; font-weight: 600 !important; }
-  .td-amt { font-size: 15px !important; font-weight: 700 !important; font-variant-numeric: tabular-nums; }
-  .tx-subtotal { border-radius: 14px !important; padding: 10px 14px !important; margin: 8px 0 !important; }
+  .history-scroll-body { padding: 0 0 calc(env(safe-area-inset-bottom,0px) + 90px) !important; }
+
+  /* Transaction table — full width, anchored, no float feel */
+  .tx-table {
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    table-layout: fixed !important; width: 100% !important;
+  }
+  .tx-table thead th {
+    font-size: 10px !important; text-transform: uppercase !important;
+    letter-spacing: 0.3px !important; padding: 10px 5px 8px !important;
+    position: sticky !important; top: 0 !important; z-index: 5 !important;
+  }
+  .tx-table td { padding: 11px 5px !important; }
+  .td-cat { font-size: 14px !important; font-weight: 600 !important; }
+  .td-amt { font-size: 14px !important; font-weight: 700 !important; font-variant-numeric: tabular-nums; }
+  .td-desc, .td-debtor { font-size: 11px !important; }
+  .tx-subtotal { border-radius: 0 !important; padding: 10px 12px !important; margin: 0 !important; }
   .tx-subtotal-label { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; }
   .tx-subtotal-value { font-size: 15px !important; font-weight: 800 !important; }
-  .selection-bar { left: 0 !important; border-radius: 0 !important; padding: 12px 16px calc(env(safe-area-inset-bottom,0px) + 6px) !important; }
+  .selection-bar {
+    left: 0 !important; right: 0 !important; border-radius: 0 !important;
+    padding: 10px 12px calc(env(safe-area-inset-bottom,0px) + 6px) !important;
+  }
   .selection-bar-actions button { border-radius: 10px !important; }
   .fab-add {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
-    right: 16px !important; width: 52px !important; height: 52px !important;
-    border-radius: 16px !important; font-size: 28px !important;
+    right: 14px !important; width: 50px !important; height: 50px !important;
+    border-radius: 16px !important; font-size: 26px !important;
   }
 
-  /* ── MODALS — bottom sheet layout ────────────────────── */
+  /* ── MODALS — bottom sheet ───────────────────────────── */
   .modal-overlay { align-items: flex-end !important; }
   .modal, .modal-large, .modal-sheet {
-    border-radius: 20px 20px 0 0 !important; margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important; margin: 0 !important;
     max-width: 100% !important; width: 100% !important;
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
     animation: slideUp .28s cubic-bezier(.16,1,.3,1) both !important;
   }
 
-  /* ── CARDS / GROUPS ──────────────────────────────────── */
-  .group { border-radius: 16px !important; }
+  /* ── GROUPS ──────────────────────────────────────────── */
+  .group { border-radius: 14px !important; }
 
-  /* ── INPUTS — 16px min prevents iOS zoom ─────────────── */
+  /* ── INPUTS — 16px prevents iOS zoom ─────────────────── */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select, textarea { border-radius: 12px !important; font-size: 16px !important; }
+  select, textarea { font-size: 16px !important; }
 
   /* ── BUTTONS ─────────────────────────────────────────── */
-  .btn-primary { border-radius: 14px !important; }
-  .btn-secondary, .btn-cancel { border-radius: 14px !important; }
-  .modal-buttons button { border-radius: 14px !important; }
+  .btn-primary { border-radius: 12px !important; }
+  .btn-secondary, .btn-cancel { border-radius: 12px !important; }
+  .modal-buttons button { border-radius: 12px !important; }
 
   /* ── DRAWER ──────────────────────────────────────────── */
   .drawer { border-radius: 0 !important; width: min(85vw, 360px) !important; }
   .drawer-header { padding-top: calc(env(safe-area-inset-top, 0px) + 12px) !important; }
-  .drawer-menu-item { border-radius: 14px !important; margin: 2px 12px !important; padding: 14px !important; }
+  .drawer-menu-item { border-radius: 12px !important; margin: 2px 12px !important; padding: 12px !important; }
 
   /* ── SETTINGS ────────────────────────────────────────── */
-  .settings-tabs { padding: 8px 16px 0 !important; gap: 4px !important; }
-  .settings-tab { border-radius: 12px 12px 0 0 !important; padding: 10px 16px !important; font-size: 14px !important; }
-  .settings-panel { padding: 16px !important; padding-bottom: calc(env(safe-area-inset-bottom,0px) + 100px) !important; }
-  .settings-item, .smgmt-item { padding: 14px 8px !important; }
+  .settings-tabs { padding: 8px 12px 0 !important; gap: 4px !important; }
+  .settings-tab { border-radius: 10px 10px 0 0 !important; padding: 10px 14px !important; font-size: 14px !important; }
+  .settings-panel { padding: 12px !important; padding-bottom: calc(env(safe-area-inset-bottom,0px) + 90px) !important; }
+  .settings-item, .smgmt-item { padding: 12px 8px !important; }
 
   /* ── PREVISIONS ──────────────────────────────────────── */
-  .prevision-row { border-radius: 14px !important; margin-bottom: 8px !important; padding: 14px !important; }
-  .queue-item { border-radius: 14px !important; padding: 12px 14px !important; }
+  .prevision-row { border-radius: 12px !important; margin-bottom: 6px !important; padding: 12px !important; }
+  .queue-item { border-radius: 12px !important; padding: 10px 12px !important; }
 
   /* ── RECONCILE ───────────────────────────────────────── */
-  #reconcileModal .modal-box { border-radius: 20px 20px 0 0 !important; max-width: 100% !important; width: 100% !important; }
+  #reconcileModal .modal-box { border-radius: 16px 16px 0 0 !important; max-width: 100% !important; width: 100% !important; }
 
   /* ── MISC ─────────────────────────────────────────────── */
-  .success-msg { border-radius: 14px !important; margin: 0 16px !important; }
-  .undo-popup { border-radius: 20px !important; width: calc(100% - 32px) !important; }
-  * { -webkit-tap-highlight-color: transparent; }
+  .success-msg { border-radius: 12px !important; margin: 0 12px !important; }
+  .undo-popup { border-radius: 16px !important; width: calc(100% - 24px) !important; }
 
 } /* fin @media mobile native */
 
