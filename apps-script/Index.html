@@ -1269,11 +1269,13 @@
 ══════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
 
-  /* ── SAISIE : réordonnement flex ─────────────────────── */
+  /* ── SAISIE : réordonnement flex + plein écran ───────── */
   #transactionsSection {
     display: flex;
     flex-direction: column;
     gap: 0;
+    flex: 1;
+    min-height: 0;
   }
   /* Montant (dans simpleFormBlock) passe avant le groupe date+bénéf */
   #transactionsSection .segment               { order: 1; }
@@ -2768,6 +2770,12 @@
   .sheet {
     padding: 0 !important;
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 90px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  /* Les autres sections gardent leur scroll naturel */
+  #budgetSection, #historySection, #settingsSection, #epargneSection {
+    flex: 0 0 auto !important;
   }
 
   /* ── HEADER ──────────────────────────────────────────── */
@@ -2798,22 +2806,81 @@
   /* Réglages tab (5th) visible mobile only */
   .nav-item-settings-mobile { display: flex !important; }
 
-  /* ── SAISIE ──────────────────────────────────────────── */
-  #transactionsSection { padding: 0 12px; }
-  #transactionsSection .group { border-radius: 14px; padding: 14px; }
-  .segment { border-radius: 10px !important; padding: 3px !important; gap: 3px !important; }
-  .segment button { border-radius: 8px !important; padding: 9px 4px !important; font-size: 15px !important; font-weight: 600 !important; }
+  /* ── SAISIE — layout plein écran app-like ────────────── */
+  #transactionsSection {
+    padding: 0 !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+  }
+  #transactionsSection .group {
+    border-radius: 0 !important;
+    padding: 10px 16px !important;
+    background: transparent !important;
+    gap: 10px !important;
+  }
+  #transactionsSection > .group:first-of-type {
+    flex: 0 0 auto !important;
+  }
+  #simpleFormBlock {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #simpleFormBlock .group {
+    flex: 1 !important;
+    justify-content: center !important;
+  }
+  /* Segment control */
+  .segment { border-radius: 12px !important; padding: 3px !important; gap: 3px !important; margin: 0 16px !important; }
+  .segment button { border-radius: 9px !important; padding: 10px 4px !important; font-size: 15px !important; font-weight: 600 !important; min-height: 44px !important; }
+  /* Montant hero — plus aéré, centré */
+  .simple-form-row .input-euro-wrap {
+    padding: 16px 20px !important;
+    border-radius: 16px !important;
+    min-height: 70px !important;
+    justify-content: flex-end !important;
+  }
   #simpleAmount {
-    font-size: 38px !important; font-weight: 700 !important;
+    font-size: 42px !important; font-weight: 700 !important;
     letter-spacing: -1px; font-variant-numeric: tabular-nums;
   }
-  .input-euro-suffix { font-size: 26px !important; font-weight: 600 !important; }
-  #simpleCategory { border-radius: 12px !important; padding: 12px !important; font-size: 16px !important; }
-  .form-actions .btn-primary {
-    border-radius: 12px !important; padding: 14px !important;
-    font-size: 17px !important; font-weight: 600 !important;
+  .input-euro-suffix { font-size: 28px !important; font-weight: 600 !important; }
+  /* Catégorie */
+  #simpleCategory { border-radius: 12px !important; padding: 14px 12px !important; font-size: 16px !important; min-height: 50px !important; }
+  /* Date + Bénéficiaire — tactile */
+  .saisie-row-top input[type=date] { min-height: 50px !important; }
+  .saisie-row-top .debtor-input-row { min-height: 50px !important; }
+  #description { min-height: 50px !important; }
+  /* Boutons ventiler/effacer */
+  #simpleFormBlock .btn-secondary,
+  #simpleFormBlock .btn-ghost { min-height: 44px !important; border-radius: 12px !important; }
+  /* Checkbox relevé */
+  #txClearedBtn { min-height: 44px !important; font-size: 14px !important; padding: 10px 14px !important; border-radius: 12px !important; }
+  /* Boutons action — collés en bas */
+  #transactionsSection .form-actions {
+    margin-top: auto !important;
+    padding: 8px 16px calc(env(safe-area-inset-bottom, 0px) + 0px) !important;
+    gap: 8px !important;
   }
-  .form-actions .btn-dark { border-radius: 12px !important; font-size: 15px !important; }
+  .form-actions .btn-primary {
+    border-radius: 14px !important; padding: 16px !important;
+    font-size: 17px !important; font-weight: 700 !important;
+    min-height: 54px !important;
+  }
+  .form-actions .btn-dark { border-radius: 14px !important; font-size: 16px !important; min-height: 54px !important; }
+  /* Queue section */
+  #queueSection {
+    padding: 10px 16px !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+  /* Inputs — prevent iOS zoom + tactile */
+  #transactionsSection input,
+  #transactionsSection select {
+    touch-action: manipulation !important;
+  }
 
   /* ── BUDGET ──────────────────────────────────────────── */
   .budget-sticky-top { padding: 8px 12px 0 !important; }
@@ -2897,9 +2964,13 @@
   /* ── GROUPS ──────────────────────────────────────────── */
   .group { border-radius: 14px !important; }
 
-  /* ── INPUTS — 16px prevents iOS zoom ─────────────────── */
+  /* ── INPUTS — 16px prevents iOS zoom + tactile ──────── */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-  select, textarea { font-size: 16px !important; }
+  select, textarea {
+    font-size: 16px !important;
+    touch-action: manipulation !important;
+  }
+  body { overscroll-behavior: none !important; -webkit-text-size-adjust: 100% !important; }
 
   /* ── BUTTONS ─────────────────────────────────────────── */
   .btn-primary { border-radius: 12px !important; }
