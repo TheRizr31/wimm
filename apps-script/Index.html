@@ -2761,25 +2761,18 @@
 @media (max-width: 1023px) {
 
   /* ── APP SHELL ───────────────────────────────────────── */
-  .app { background: var(--bg); }
   .sheet { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 100px); }
 
-  /* ── HEADER — iOS translucent bar ────────────────────── */
+  /* ── HEADER — compact ────────────────────────────────── */
   .app-header {
-    background: var(--bg) !important;
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-bottom: 0.5px solid rgba(0,0,0,0.08);
     padding-top: env(safe-area-inset-top, 0px);
-  }
-  body.theme-dark .app-header,
-  body.theme-fintech .app-header {
-    border-bottom-color: rgba(255,255,255,0.06);
   }
   .header-inner { padding: 10px 16px; }
   .app-title { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
-  .btn-settings-open { width: 38px; height: 38px; border-radius: 12px; background: rgba(0,0,0,0.04); font-size: 22px; }
+  .btn-settings-open { width: 38px; height: 38px; border-radius: 12px; font-size: 22px; }
 
-  /* ── BOTTOM NAV — iOS tab bar ────────────────────────── */
+  /* ── BOTTOM NAV — full-width iOS tab bar layout ──────── */
   .bottom-nav {
     position: fixed !important;
     bottom: 0 !important; left: 0 !important; right: 0 !important;
@@ -2787,22 +2780,9 @@
     border-radius: 0 !important;
     padding: 6px 0 calc(env(safe-area-inset-bottom, 0px) + 4px) !important;
     min-width: unset !important; max-width: unset !important; width: 100% !important;
-    background: rgba(249,249,249,0.94) !important;
     backdrop-filter: saturate(180%) blur(20px) !important;
     -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
-    border: none !important;
-    border-top: 0.5px solid rgba(0,0,0,0.15) !important;
-    box-shadow: none !important;
     gap: 0 !important;
-  }
-  body.theme-dark .bottom-nav,
-  body.theme-fintech .bottom-nav {
-    background: rgba(30,31,36,0.94) !important;
-    border-top-color: rgba(255,255,255,0.1) !important;
-  }
-  body.theme-zen .bottom-nav {
-    background: rgba(251,251,249,0.94) !important;
-    border-top-color: rgba(0,0,0,0.1) !important;
   }
 
   .nav-item {
@@ -2810,7 +2790,7 @@
     gap: 2px !important; padding: 4px 2px 2px !important;
     border-radius: 0 !important; background: none !important; box-shadow: none !important;
     font-size: 10px !important; font-weight: 500 !important; letter-spacing: 0 !important;
-    color: #8E8E93 !important; transition: color 0.15s !important;
+    transition: color 0.15s !important;
     width: auto !important; min-width: 0 !important;
   }
   .nav-item span { color: inherit !important; }
@@ -2818,42 +2798,20 @@
   .nav-item .nav-icon svg { width: 24px !important; height: 24px !important; }
   .nav-item:active { transform: none !important; opacity: 0.6; }
 
-  /* Active tab — tinted, no background pill */
-  .nav-item.active {
-    color: var(--primary) !important;
-    background: none !important; box-shadow: none !important;
-  }
-  .nav-item.active span { color: var(--primary) !important; }
-  .nav-item.active .nav-icon { color: var(--primary) !important; }
-  .nav-item.active .nav-icon svg { color: var(--primary) !important; stroke: var(--primary) !important; }
-
-  body.theme-zen .nav-item { color: var(--text-muted) !important; }
-  body.theme-zen .nav-item span { color: var(--text-muted) !important; }
-  body.theme-zen .nav-item.active,
-  body.theme-zen .nav-item.active span { color: var(--primary) !important; background: none !important; box-shadow: none !important; }
-  body.theme-dark .nav-item,
-  body.theme-fintech .nav-item { color: rgba(255,255,255,0.4) !important; }
-  body.theme-dark .nav-item span,
-  body.theme-fintech .nav-item span { color: rgba(255,255,255,0.4) !important; }
-  body.theme-dark .nav-item.active,
-  body.theme-dark .nav-item.active span,
-  body.theme-fintech .nav-item.active,
-  body.theme-fintech .nav-item.active span { color: var(--primary) !important; background: none !important; box-shadow: none !important; }
+  /* Active tab — no background pill, just tint */
+  .nav-item.active { background: none !important; box-shadow: none !important; }
 
   /* Réglages tab (5th) visible mobile only */
   .nav-item-settings-mobile { display: flex !important; }
 
-  /* ── SAISIE — native card layout ─────────────────────── */
+  /* ── SAISIE — card layout ────────────────────────────── */
   #transactionsSection .group {
-    background: var(--card); border-radius: 16px;
-    margin: 0 16px; padding: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border-radius: 16px; margin: 0 16px; padding: 16px;
   }
   #transactionsSection > .segment { margin: 0 16px; border-radius: 12px; }
   .simple-form-row .input-euro-wrap {
-    background: var(--card) !important; border-radius: 16px !important;
+    border-radius: 16px !important;
     padding: 14px 20px !important; margin: 0 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
   }
   #simpleAmount {
     font-size: 42px !important; font-weight: 700 !important;
@@ -2871,19 +2829,14 @@
   }
   .form-actions .btn-dark { border-radius: 14px !important; font-size: 15px !important; }
 
-  /* ── BUDGET — iOS card layout ────────────────────────── */
-  .budget-sticky-top { padding: 8px 16px 0 !important; background: var(--bg) !important; border-bottom: none !important; }
+  /* ── BUDGET — card layout ────────────────────────────── */
+  .budget-sticky-top { padding: 8px 16px 0 !important; border-bottom: none !important; }
   .budget-period-bar select { border-radius: 12px !important; font-size: 16px !important; padding: 10px 12px !important; }
-  .disponible-card {
-    border-radius: 16px !important; padding: 16px 20px !important;
-  }
+  .disponible-card { border-radius: 16px !important; padding: 16px 20px !important; }
   .disponible-card-label { font-size: 12px !important; font-weight: 700 !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; }
   .disponible-card-value { font-size: 32px !important; font-weight: 800 !important; letter-spacing: -1px !important; }
   .budget-scroll-body { padding: 8px 16px calc(env(safe-area-inset-bottom,0px) + 100px) !important; }
-  .budget-table {
-    border-radius: 16px !important; overflow: hidden !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-  }
+  .budget-table { border-radius: 16px !important; overflow: hidden !important; }
   .budget-table thead th { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; padding: 10px 6px 8px !important; }
   .cat-row td { padding: 12px 6px !important; }
   .bucket-header { border-radius: 0 !important; }
@@ -2893,13 +2846,10 @@
   .budget-action-bar .btn-sm { border-radius: 10px !important; padding: 7px 14px !important; font-size: 13px !important; }
   .btn-budget-add { width: 36px !important; height: 36px !important; }
 
-  /* ── BANQUE — iOS transaction list ───────────────────── */
-  .history-sticky-top { padding: 8px 16px 8px !important; background: var(--bg) !important; border-bottom: none !important; }
+  /* ── BANQUE — transaction list ───────────────────────── */
+  .history-sticky-top { padding: 8px 16px 8px !important; border-bottom: none !important; }
   .soldes-bar { gap: 6px !important; margin-bottom: 4px; }
-  .solde-card {
-    border-radius: 14px !important; padding: 10px 8px !important;
-    background: var(--card) !important; box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
-  }
+  .solde-card { border-radius: 14px !important; padding: 10px 8px !important; }
   .solde-label { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; }
   .solde-value { font-size: 15px !important; font-weight: 800 !important; }
   .history-toolbar { gap: 8px !important; }
@@ -2909,18 +2859,12 @@
   .filter-uncleared { padding: 8px 4px !important; }
   .filter-uncleared label { font-size: 14px !important; }
   .history-scroll-body { padding: 0 16px calc(env(safe-area-inset-bottom,0px) + 100px) !important; }
-  .tx-table {
-    border-radius: 16px !important; overflow: hidden !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-  }
+  .tx-table { border-radius: 16px !important; overflow: hidden !important; }
   .tx-table thead th { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.4px !important; padding: 10px 5px 8px !important; }
   .tx-table td { padding: 12px 5px !important; }
-  .td-date { font-size: 12px !important; color: var(--text-muted) !important; }
   .td-cat { font-size: 15px !important; font-weight: 600 !important; }
   .td-amt { font-size: 15px !important; font-weight: 700 !important; font-variant-numeric: tabular-nums; }
-  .tx-subtotal {
-    border-radius: 14px !important; padding: 10px 14px !important; margin: 8px 0 !important;
-  }
+  .tx-subtotal { border-radius: 14px !important; padding: 10px 14px !important; margin: 8px 0 !important; }
   .tx-subtotal-label { font-size: 10px !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; }
   .tx-subtotal-value { font-size: 15px !important; font-weight: 800 !important; }
   .selection-bar { left: 0 !important; border-radius: 0 !important; padding: 12px 16px calc(env(safe-area-inset-bottom,0px) + 6px) !important; }
@@ -2929,10 +2873,9 @@
     bottom: calc(env(safe-area-inset-bottom, 0px) + 70px) !important;
     right: 16px !important; width: 52px !important; height: 52px !important;
     border-radius: 16px !important; font-size: 28px !important;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2) !important;
   }
 
-  /* ── MODALS — iOS bottom sheet ───────────────────────── */
+  /* ── MODALS — bottom sheet layout ────────────────────── */
   .modal-overlay { align-items: flex-end !important; }
   .modal, .modal-large, .modal-sheet {
     border-radius: 20px 20px 0 0 !important; margin: 0 !important;
@@ -2942,13 +2885,13 @@
   }
 
   /* ── CARDS / GROUPS ──────────────────────────────────── */
-  .group { border-radius: 16px !important; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .group { border-radius: 16px !important; }
 
   /* ── INPUTS — 16px min prevents iOS zoom ─────────────── */
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select, textarea { border-radius: 12px !important; font-size: 16px !important; }
 
-  /* ── BUTTONS — iOS rounded ───────────────────────────── */
+  /* ── BUTTONS ─────────────────────────────────────────── */
   .btn-primary { border-radius: 14px !important; }
   .btn-secondary, .btn-cancel { border-radius: 14px !important; }
   .modal-buttons button { border-radius: 14px !important; }
