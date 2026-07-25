@@ -9,7 +9,7 @@
 - Création de ce fichier de récapitulatif de session
 - Audit complet du CSS mobile de `apps-script/Index.html` (~2 930 lignes de CSS)
 - Analyse de la capture iPhone réelle de l'onglet Saisie
-- **Refonte CSS Saisie mobile — appliquée** (commit `a8e8b3a`)
+- Refonte CSS Saisie mobile appliquée (commit `a8e8b3a`) — **ANNULÉE**, voir section « Revert » ci-dessous
 
 ---
 
@@ -54,7 +54,7 @@
 **Commit** : `a8e8b3a`
 **Branche** : `claude/fix-modify-code-Nv39x`
 **Fichier** : `apps-script/Index.html`
-**Statut** : En attente de test utilisateur sur iPhone
+**Statut** : ❌ **REVERTÉ** (commit `a064586`) — le contenu ci-dessous est conservé à titre d'archive uniquement, il n'est plus dans le code.
 
 #### Détail des modifications CSS (pour rollback si besoin)
 
@@ -156,12 +156,45 @@ body { overscroll-behavior: none !important; -webkit-text-size-adjust: 100% !imp
 
 ---
 
+---
+
+### ⛔ REVERT — Retour arrière complet (16/03/2026)
+
+**Commit de revert** : `a064586` — *Revert "feat: refonte Saisie mobile - layout plein écran app-like"*
+
+#### Ce qui s'est passé
+Retour utilisateur après déploiement :
+> « Il faut rétro pédaler, plus rien ne va, l'onglet saisie n'a plus aucun sens, de plus il empiète sur tous les autres onglets en fond. »
+
+#### Cause racine identifiée
+Le `display: flex; flex-direction: column` ajouté sur `.sheet` (modif n°1) combiné au `flex: 1` sur `#transactionsSection` (modif n°3) a cassé le mécanisme de bascule d'onglets.
+Les sections non actives sont masquées par un `style="display:none"` **inline** — mais le contexte flex du parent a provoqué un recalcul de layout qui a fait déborder `#transactionsSection` par-dessus les autres sections.
+
+**Leçon** : ne jamais transformer `.sheet` en conteneur flex tant que la bascule d'onglets repose sur `display:none` inline.
+
+#### État après revert
+- `apps-script/Index.html` : CSS strictement identique à l'état pré-`a8e8b3a`
+- Working tree propre, revert poussé sur `origin/claude/fix-modify-code-Nv39x`
+- ⚠️ **Le revert n'est visible dans l'app qu'après redéploiement manuel** dans l'éditeur Apps Script (git ne déploie pas vers Google).
+
+#### Nouvelle méthode de travail (validée avec l'utilisateur)
+> « On va faire étape par étape. »
+
+1. **Une seule modification isolée à la fois**
+2. Commit dédié et atomique (revert trivial)
+3. Déploiement + test iPhone par l'utilisateur
+4. Validation explicite avant de passer au point suivant
+5. Ne jamais toucher au layout structurel (`.sheet`, bascule d'onglets) — rester sur du cosmétique ciblé
+
+---
+
 ### Fichiers modifiés
 | Fichier | Action | Commit |
 |---|---|---|
 | `context.md` | Déplacé vers `context/context.md` | — |
-| `context/session-recap.md` | Créé puis mis à jour | `d657bce`, `b4dc6a0`, `a8e8b3a` |
+| `context/session-recap.md` | Créé puis mis à jour | `d657bce`, `b4dc6a0`, `f39d022` |
 | `apps-script/Index.html` | Refonte CSS Saisie mobile | `a8e8b3a` |
+| `apps-script/Index.html` | **Revert de la refonte** | `a064586` |
 
 ### Décisions prises
 - Dossier `context/` choisi pour regrouper le contexte projet et les récaps de session
@@ -171,7 +204,18 @@ body { overscroll-behavior: none !important; -webkit-text-size-adjust: 100% !imp
 - Approche : CSS-only dans la media query mobile, pas de modif HTML
 
 ### Points en suspens / À faire
-- [ ] **Test iPhone Saisie** — en attente retour utilisateur
-- [ ] Budget : pleine largeur + fonts lisibles (pas encore attaqué)
+
+#### Bloquant immédiat
+- [ ] **Redéployer** `Index.html` dans l'éditeur Apps Script pour que le revert prenne effet
+- [ ] Confirmer que l'app est revenue à un état fonctionnel
+
+#### Les 3 problèmes utilisateur — toujours non traités
+1. [ ] **Zoom automatique** à la saisie du champ « Bénéficiaire »
+2. [ ] **Onglet Budget** : le tableau ne prend pas la largeur totale + caractères trop petits
+3. [ ] **Onglet Saisie** : seule la moitié de l'écran est utilisée
+
+#### Plus tard
 - [ ] Banque : tableau → cards (à planifier)
-- [ ] Vérifier que les autres onglets (Budget, Banque, Réglages) ne sont pas cassés par le `display:flex` sur `.sheet`
+
+#### Contrainte technique connue
+- Le code `.gs` live de l'Apps Script lié au Sheet **n'est pas lisible** par l'assistant (script container-bound, invisible dans Drive, pas d'API Apps Script). Seuls `apps-script/Code.gs` et `apps-script/Index.html` du repo sont accessibles. Si le live diverge du repo, il faut synchroniser manuellement (clasp ou copier-coller).
