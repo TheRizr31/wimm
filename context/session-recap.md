@@ -190,7 +190,15 @@ Les sections non actives sont masquées par un `style="display:none"` **inline**
 
 ---
 
-### 🖥️ Plein écran standalone iOS (16/03/2026) — commit `080439f`
+### 🖥️ Plein écran standalone iOS (16/03/2026) — commit `080439f` → ❌ **ANNULÉ** (`9da095d`)
+
+> **Décision utilisateur** : annulation avant tout déploiement. La solution reposait sur une iframe, dont le comportement de scroll sur iOS n'était pas garanti sans test réel. Jugée trop risquée au regard du bénéfice.
+>
+> **Rien n'a jamais été mis en ligne** : le commit n'a pas été mergé dans `main`, donc GitHub Pages n'a jamais servi cette version. Le lanceur en production n'a pas bougé.
+>
+> `index.html` est bit-pour-bit identique à son état d'origine, `manifest.json` supprimé.
+>
+> Le contenu ci-dessous est conservé comme archive technique — le diagnostic reste valable si le sujet est repris un jour.
 
 **Demande** : lancer l'app sans la barre de domaine en haut ni la barre Safari en bas.
 
@@ -246,8 +254,10 @@ Scroll interne dans une iframe sur iOS : historiquement capricieux. L'app utilis
 #### Bloquant immédiat
 - [ ] **Redéployer** `Index.html` dans l'éditeur Apps Script pour que le revert prenne effet
 - [ ] Confirmer que l'app est revenue à un état fonctionnel
-- [ ] **Merger `080439f` dans `main`** pour déployer le plein écran (GitHub Pages sert `main`)
-- [ ] Supprimer puis recréer le raccourci écran d'accueil (iOS met le lanceur en cache)
+- ~~Merger `080439f` dans `main`~~ → **abandonné**, plein écran annulé (`9da095d`)
+
+#### Contrainte utilisateur
+- Pas d'accès à un ordinateur → **impossible de déployer sur Apps Script** pour le moment. Toute correction de `Index.html` ou `Code.gs` est en attente.
 
 #### Les 3 problèmes utilisateur — toujours non traités
 1. [ ] **Zoom automatique** à la saisie du champ « Bénéficiaire »
