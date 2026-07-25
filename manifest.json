@@ -1,0 +1,26 @@
+{
+  "name": "WIMM? — Where Is My Money",
+  "short_name": "WIMM?",
+  "description": "Budget personnel par enveloppes",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E1F24",
+  "theme_color": "#1E1F24",
+  "icons": [
+    {
+      "src": "icon.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}

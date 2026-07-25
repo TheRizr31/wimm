@@ -2,15 +2,17 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <link rel="apple-touch-icon" href="https://therizr31.github.io/wimm/icon.jpg">
   <link rel="apple-touch-icon" sizes="180x180" href="https://therizr31.github.io/wimm/icon.jpg">
   <link rel="apple-touch-icon" sizes="152x152" href="https://therizr31.github.io/wimm/icon.jpg">
   <link rel="apple-touch-icon" sizes="120x120" href="https://therizr31.github.io/wimm/icon.jpg">
   <link rel="shortcut icon" href="https://therizr31.github.io/wimm/icon.jpg">
+  <link rel="manifest" href="manifest.json">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="WIMM?">
   <meta name="theme-color" content="#1E1F24">
@@ -19,9 +21,14 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
+    html, body {
       background: #1E1F24;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
+    }
+    body {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -51,13 +58,41 @@
     }
     .hint strong { color: rgba(255,255,255,0.5); }
     .share-icon { display:inline-block; width:16px; height:16px; vertical-align:middle; margin:0 2px; }
-    /* Ecran de chargement affiché en mode standalone avant redirect */
+
+    /* ---------- Mode standalone : app en plein ecran via iframe ---------- */
+    /* On NE navigue PAS vers script.google.com : iOS sortirait du mode      */
+    /* standalone et reafficherait les barres Safari. On embarque l'app.     */
+    #appShell {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #1E1F24;
+      /* env() vaut 0 a l'interieur d'une iframe : on reserve donc l'encoche */
+      /* et l'indicateur Home ici, au niveau de la page parente.             */
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+    #appShell.show { display: block; }
+    #appFrame {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #1E1F24;
+    }
+
+    /* ---------- Ecran de chargement ---------- */
     #loadingScreen {
       display: none;
       flex-direction: column; align-items: center; justify-content: center;
       gap: 20px; position: fixed; inset: 0; background: #1E1F24;
+      z-index: 10;
+      transition: opacity .35s ease;
     }
     #loadingScreen.show { display: flex; }
+    #loadingScreen.fade { opacity: 0; pointer-events: none; }
     .spinner {
       width: 40px; height: 40px;
       border: 3px solid rgba(251,215,47,0.2);
@@ -67,29 +102,23 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-txt { color: rgba(255,255,255,0.4); font-size: 13px; }
-  </style>
-
-  <script>
-    var APP_URL = "https://script.google.com/macros/s/AKfycbymNDazMvjEFpGWH-U8zfl-xETVM42w5zGRYA33ophP4hZP3Ryw55qbN7PhQEnfvMw/exec";
-
-    // Si ouvert depuis l'ecran d'accueil (mode standalone iOS)
-    // ou depuis Android TWA → redirection automatique
-    if (
-      window.navigator.standalone === true ||
-      window.matchMedia("(display-mode: standalone)").matches
-    ) {
-      // Afficher le spinner et rediriger
-      document.addEventListener("DOMContentLoaded", function() {
-        document.getElementById("mainContent").style.display = "none";
-        document.getElementById("loadingScreen").classList.add("show");
-      });
-      window.location.replace(APP_URL);
+    .escape {
+      color: rgba(255,255,255,0.3); font-size: 12px;
+      text-decoration: underline; margin-top: 8px;
     }
-  </script>
+  </style>
 </head>
 <body>
 
-  <!-- Ecran de chargement (mode standalone) -->
+  <!-- App embarquee plein ecran (mode standalone uniquement) -->
+  <div id="appShell">
+    <iframe id="appFrame"
+            title="WIMM?"
+            allow="clipboard-read; clipboard-write"
+            referrerpolicy="no-referrer-when-downgrade"></iframe>
+  </div>
+
+  <!-- Ecran de chargement -->
   <div id="loadingScreen">
     <img class="icon" src="https://therizr31.github.io/wimm/icon.jpg" alt="WIMM?">
     <div class="spinner"></div>
@@ -102,7 +131,7 @@
     <div class="title">WIMM?</div>
     <div class="subtitle">Where Is My Money</div>
 
-    <a class="btn" href="https://script.google.com/macros/s/AKfycbymNDazMvjEFpGWH-U8zfl-xETVM42w5zGRYA33ophP4hZP3Ryw55qbN7PhQEnfvMw/exec">Ouvrir l'app &rarr;</a>
+    <a class="btn" id="openBtn" href="#">Ouvrir l'app &rarr;</a>
 
     <div class="hint">
       Pour ajouter l'app sur votre &eacute;cran d'accueil :<br>
@@ -114,19 +143,46 @@
     </div>
   </div>
 
+  <script>
+    var APP_URL = "https://script.google.com/macros/s/AKfycbymNDazMvjEFpGWH-U8zfl-xETVM42w5zGRYA33ophP4hZP3Ryw55qbN7PhQEnfvMw/exec";
+
+    document.getElementById("openBtn").href = APP_URL;
+
+    var isStandalone =
+      window.navigator.standalone === true ||
+      window.matchMedia("(display-mode: standalone)").matches;
+
+    // Echappatoire : ?direct=1 force l'ancien comportement (redirection).
+    // A utiliser si l'iframe pose probleme, sans etre bloque hors de l'app.
+    var forceDirect = /[?&]direct=1/.test(window.location.search);
+
+    if (isStandalone && forceDirect) {
+      window.location.replace(APP_URL);
+    } else if (isStandalone) {
+      document.getElementById("mainContent").style.display = "none";
+      document.getElementById("loadingScreen").classList.add("show");
+      document.getElementById("appShell").classList.add("show");
+
+      var frame = document.getElementById("appFrame");
+      frame.addEventListener("load", function () {
+        var loader = document.getElementById("loadingScreen");
+        loader.classList.add("fade");
+        setTimeout(function () { loader.classList.remove("show", "fade"); }, 400);
+      });
+      frame.src = APP_URL;
+
+      // Filet de securite : si l'iframe n'a pas charge au bout de 12s
+      // (blocage X-Frame-Options, reseau...), on propose la sortie manuelle.
+      setTimeout(function () {
+        var loader = document.getElementById("loadingScreen");
+        if (loader.classList.contains("show")) {
+          loader.querySelector(".loading-txt").innerHTML =
+            "Chargement plus long que prevu..." +
+            '<br><a class="escape" href="?direct=1">Ouvrir en mode classique</a>';
+        }
+      }, 12000);
+    }
+  </script>
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
