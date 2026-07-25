@@ -188,6 +188,42 @@ Les sections non actives sont masquées par un `style="display:none"` **inline**
 
 ---
 
+---
+
+### 🖥️ Plein écran standalone iOS (16/03/2026) — commit `080439f`
+
+**Demande** : lancer l'app sans la barre de domaine en haut ni la barre Safari en bas.
+
+#### Diagnostic
+Le lanceur GitHub Pages (`index.html` à la racine, servi sur `therizr31.github.io/wimm/`) était **correctement** configuré en standalone (`apple-mobile-web-app-capable`, `apple-touch-icon` perso). Mais il exécutait `window.location.replace(APP_URL)` vers `script.google.com`.
+
+**iOS éjecte du mode standalone dès qu'on navigue vers une autre origine.** → bascule en vue Safari embarquée avec barre de domaine + barre d'outils. Limitation système, aucun réglage ne la contourne.
+
+#### Solution appliquée
+Ne plus quitter l'origine `github.io` : l'app est embarquée dans une **iframe plein écran**.
+
+| Changement | Fichier | Raison |
+|---|---|---|
+| Redirection → iframe `#appFrame` | `index.html` | Reste sur github.io, garde le mode standalone |
+| `viewport-fit=cover` ajouté au meta viewport | `index.html` | Sans lui `env(safe-area-inset-*)` vaut 0 |
+| `safe-area-inset` en padding sur `#appShell` | `index.html` | **En iframe, `env()` vaut 0 côté app** → l'encoche et l'indicateur Home doivent être réservés par la page parente |
+| `manifest.json` créé | racine | Standalone Android/Chrome |
+| Échappatoire `?direct=1` | `index.html` | Force l'ancienne redirection si l'iframe pose problème → jamais bloqué hors de l'app |
+| Timeout 12 s + lien de secours | `index.html` | Si l'iframe ne charge pas, sortie manuelle proposée |
+
+**Prérequis déjà satisfait** : `doGet()` utilise `HtmlService.XFrameOptionsMode.ALLOWALL` (Code.gs:19) — sans ça l'iframe serait bloquée.
+
+#### ⚠️ Déploiement
+GitHub Pages sert la branche **`main`**. Le commit est sur `claude/fix-modify-code-Nv39x` → **il faut merger dans `main`** pour que ça prenne effet. Aucun redéploiement Apps Script nécessaire (Code.gs et Index.html non modifiés).
+
+#### Risque résiduel à tester
+Scroll interne dans une iframe sur iOS : historiquement capricieux. L'app utilise un shell `100dvh; overflow:hidden` avec scroller interne (`.sheet`), ce qui devrait passer. À valider sur l'iPhone.
+
+#### Rollback
+`git revert 080439f` — modification totalement isolée du code de l'app (`apps-script/Index.html` non touché).
+
+---
+
 ### Fichiers modifiés
 | Fichier | Action | Commit |
 |---|---|---|
@@ -195,6 +231,8 @@ Les sections non actives sont masquées par un `style="display:none"` **inline**
 | `context/session-recap.md` | Créé puis mis à jour | `d657bce`, `b4dc6a0`, `f39d022` |
 | `apps-script/Index.html` | Refonte CSS Saisie mobile | `a8e8b3a` |
 | `apps-script/Index.html` | **Revert de la refonte** | `a064586` |
+| `index.html` (lanceur GitHub Pages) | Plein écran standalone via iframe | `080439f` |
+| `manifest.json` | Créé (PWA standalone) | `080439f` |
 
 ### Décisions prises
 - Dossier `context/` choisi pour regrouper le contexte projet et les récaps de session
@@ -208,6 +246,8 @@ Les sections non actives sont masquées par un `style="display:none"` **inline**
 #### Bloquant immédiat
 - [ ] **Redéployer** `Index.html` dans l'éditeur Apps Script pour que le revert prenne effet
 - [ ] Confirmer que l'app est revenue à un état fonctionnel
+- [ ] **Merger `080439f` dans `main`** pour déployer le plein écran (GitHub Pages sert `main`)
+- [ ] Supprimer puis recréer le raccourci écran d'accueil (iOS met le lanceur en cache)
 
 #### Les 3 problèmes utilisateur — toujours non traités
 1. [ ] **Zoom automatique** à la saisie du champ « Bénéficiaire »
