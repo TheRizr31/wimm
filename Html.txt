@@ -534,6 +534,15 @@
     .queue-item-amt  { font-weight:700; font-size: 16px; flex-shrink:0; }
     .queue-item-meta { font-size: 12px; color:#aaa; margin-top:2px; }
     .queue-item-del  { width:28px; height:28px; background:#FEE2E2; color:var(--red); border-radius:8px; font-size: 15px; flex-shrink:0; }
+    /* Modification d'un élément de la file */
+    .queue-item-edit { width:28px; height:28px; background:rgba(251,215,47,0.16); color:var(--primary);
+      border:none; border-radius:8px; font-size:14px; flex-shrink:0; cursor:pointer; }
+    .queue-item.is-editing { outline:2px solid var(--primary); outline-offset:-1px; }
+    .queue-edit-banner { display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+      background:rgba(251,215,47,0.12); border:1px solid rgba(251,215,47,0.35);
+      color:var(--text); border-radius:10px; padding:8px 12px; margin-bottom:8px; font-size:13px; }
+    .btn-queue-edit-cancel { margin-left:auto; background:none; border:1px solid rgba(128,128,128,0.35);
+      color:var(--text-muted); border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer; }
     .btn-queue-submit:disabled { opacity:0.3; pointer-events:none; }
 
     /* ===== BUDGET ===== */
@@ -1704,6 +1713,9 @@
     .queue-item-amt { font-size: 12px !important; font-weight: 700 !important; flex-shrink: 0 !important; }
     .queue-item-meta { display: block !important; font-size: 10px !important; opacity: 0.55 !important; margin-top: 1px !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
     .queue-item-del { width: 18px !important; height: 18px !important; font-size: 11px !important; border-radius: 3px !important; flex-shrink: 0 !important; }
+    .queue-item-edit { width: 18px !important; height: 18px !important; font-size: 10px !important; border-radius: 3px !important; flex-shrink: 0 !important; }
+    .queue-edit-banner { font-size: 11px !important; padding: 5px 8px !important; margin-bottom: 4px !important; border-radius: 6px !important; }
+    .btn-queue-edit-cancel { font-size: 10px !important; padding: 2px 7px !important; }
     .btn-queue-submit { width: auto !important; padding: 5px 16px !important; font-size: 12px !important; border-radius: 5px !important; margin-top: 5px !important; display: block !important; margin-left: auto !important; }
 
     /* ── ÉPARGNE desktop compact ── */
@@ -4022,6 +4034,9 @@
   .queue-item-amt  { font-size: 20px !important; font-weight: 800 !important; }
   .queue-item-meta { font-size: 15px !important; }
   .queue-item-del  { width: 36px !important; height: 36px !important; font-size: 18px !important; }
+  .queue-item-edit { width: 36px !important; height: 36px !important; font-size: 17px !important; }
+  .queue-edit-banner { font-size: 16px !important; padding: 12px 14px !important; }
+  .btn-queue-edit-cancel { font-size: 15px !important; padding: 7px 14px !important; }
   .queue-title     { font-size: 18px !important; font-weight: 700 !important; }
   .queue-count     { font-size: 18px !important; }
   .btn-queue-submit { font-size: 20px !important; padding: 20px !important; min-height: 68px !important; width: 100% !important; margin-top: 12px !important; position: sticky !important; bottom: calc(env(safe-area-inset-bottom, 0px) + 90px) !important; z-index: 10 !important; box-shadow: 0 -4px 16px rgba(0,0,0,0.12) !important; }
@@ -4770,7 +4785,7 @@
       <!-- col: Actions -->
       <div class="sc-col sc-actions form-actions">
         <button class="btn-dark" style="border-radius:14px;padding:14px;" onclick="saveTransaction()">⚡ Direct</button>
-        <button class="btn-primary" onclick="addToQueue()">＋ File d'attente</button>
+        <button class="btn-primary" id="btnAddQueue" onclick="addToQueue()">＋ File d'attente</button>
         <button class="help-spot-btn help-spot-inline" onclick="_tourStart('saisie')" title="Visite guidée de la saisie">❓</button>
       </div>
       <div class="group" id="queueSection" style="display:none;">
@@ -6896,18 +6911,96 @@ function _collectCurrentForm() {
   return { type: "transaction", sense, date, desc, catId, catName, amount, lines: null, account_id: _selectedAccountId };
 }
 
+// ── Modification d'un élément déjà dans la file ──────────────────
+// _queueEditIdx = index en cours de modification (null = ajout normal)
+let _queueEditIdx = null;
+
+// Écrit un montant dans un champ TPE en gardant son état interne cohérent
+function _setTpeValue(el, val) {
+  if (!el) return;
+  const n = Math.abs(Number(val) || 0);
+  el.value = n ? n.toFixed(2) : "";
+  if (el._tpeReady) el._tpeCents = Math.round(n * 100);
+}
+
+function editQueueItem(idx) {
+  const item = _txQueue[idx];
+  if (!item) return;
+
+  setSense(item.sense);
+  document.getElementById("date").value        = item.date || "";
+  document.getElementById("description").value = item.desc || "";
+  const deb = document.getElementById("debtorInput");
+  if (deb) deb.value = item.debtor || "";
+
+  // Compte (multi-comptes)
+  if (item.account_id) {
+    _selectedAccountId = item.account_id;
+    const accSel = document.getElementById("accountSelect");
+    if (accSel) accSel.value = item.account_id;
+    if (typeof _renderAccountChips === "function") _renderAccountChips();
+  }
+
+  if (item.lines && item.lines.length) {
+    // Ventilation : reconstruire les lignes une à une
+    enableSplitMode();
+    document.getElementById("splitLines").innerHTML = "";
+    _setTpeValue(document.getElementById("totalAmount"), item.amount);
+    item.lines.forEach(l => {
+      const lineId = buildSplitLine("splitLines", "s" + splitCounter++);
+      const catEl = document.getElementById("splitCat-" + lineId);
+      if (catEl) catEl.value = l.category_id;
+      _setTpeValue(document.getElementById("splitAmt-" + lineId), l.amount);
+    });
+    updateReste();
+  } else {
+    disableSplitMode();
+    _setTpeValue(document.getElementById("simpleAmount"), item.amount);
+    const catEl = document.getElementById("simpleCategory");
+    if (catEl && item.catId) catEl.value = item.catId;
+  }
+
+  _queueEditIdx = idx;
+  _renderQueue();
+  // Ramener l'utilisateur au formulaire
+  const sec = document.getElementById("transactionsSection");
+  if (sec && sec.scrollIntoView) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function cancelQueueEdit() {
+  _queueEditIdx = null;
+  resetSplitForm();
+  _renderQueue();
+}
+
+// Libellé du bouton d'ajout selon le mode (ajout ou mise à jour)
+function _syncQueueBtnLabel() {
+  const btn = document.getElementById("btnAddQueue");
+  if (btn) btn.textContent = _queueEditIdx !== null ? "✓ Mettre à jour" : "＋ File d'attente";
+}
+
 function addToQueue() {
   const item = _collectCurrentForm();
   if (!item) return;
   // Inclure le bénéficiaire dans l'item
   item.debtor = (document.getElementById("debtorInput")?.value || "").trim();
-  _txQueue.push(item);
+  if (_queueEditIdx !== null && _txQueue[_queueEditIdx]) {
+    _txQueue[_queueEditIdx] = item;   // remplacement, pas d'ajout
+    _queueEditIdx = null;
+  } else {
+    _txQueue.push(item);
+  }
   resetSplitForm();
   _renderQueue();
 }
 
 function removeFromQueue(idx) {
   _txQueue.splice(idx, 1);
+  // La modification en cours suit le décalage des index (ou s'annule)
+  if (_queueEditIdx !== null) {
+    if (_queueEditIdx === idx) { _queueEditIdx = null; resetSplitForm(); }
+    else if (_queueEditIdx > idx) _queueEditIdx--;
+  }
   _renderQueue();
 }
 
@@ -6928,27 +7021,45 @@ function _renderQueue() {
   btn.disabled = false;
   list.innerHTML = "";
 
+  // Bandeau "modification en cours" (le formulaire contient l'élément édité)
+  if (_queueEditIdx !== null && _txQueue[_queueEditIdx]) {
+    const warn = document.createElement("div");
+    warn.className = "queue-edit-banner";
+    warn.innerHTML = `✏️ Modification de l'élément ${_queueEditIdx + 1} — corrige le formulaire puis
+      <b>✓ Mettre à jour</b>
+      <button class="btn-queue-edit-cancel" onclick="cancelQueueEdit()">Annuler</button>`;
+    list.appendChild(warn);
+  }
+
   _txQueue.forEach((item, idx) => {
     const div = document.createElement("div");
-    div.className = `queue-item type-${item.sense}`;
+    div.className = `queue-item type-${item.sense}` + (idx === _queueEditIdx ? " is-editing" : "");
     const sign = item.sense === "entree" ? "+" : item.sense === "prevision" ? "💰" : "-";
     const color = item.sense === "entree" ? "#27ae60" : item.sense === "prevision" ? "#3498db" : "#e74c3c";
     div.innerHTML = `
-      <div class="queue-item-content">
+      <div class="queue-item-content" onclick="editQueueItem(${idx})" style="cursor:pointer;" title="Modifier cet élément">
         <div class="queue-item-main">
           <span class="queue-item-cat">${_esc(item.catName) || "Split"}</span>
           <span class="queue-item-amt" style="color:${color}">${sign}${formatEuro(Math.abs(item.amount))}</span>
         </div>
         <div class="queue-item-meta">${item.date}${item.debtor ? " · " + _esc(item.debtor) : ""}${item.desc ? " · " + _esc(item.desc) : ""}${item.lines ? " · " + item.lines.length + " lignes" : ""}</div>
       </div>
-      <button class="queue-item-del" onclick="removeFromQueue(${idx})">✕</button>
+      <button class="queue-item-edit" onclick="editQueueItem(${idx})" title="Modifier">✏️</button>
+      <button class="queue-item-del" onclick="removeFromQueue(${idx})" title="Retirer de la file">✕</button>
     `;
     list.appendChild(div);
   });
+  _syncQueueBtnLabel();
 }
 
 function submitQueue() {
   if (!_txQueue.length) return;
+  // Une modification en cours n'est pas encore appliquée à la file → ne pas l'envoyer en silence
+  if (_queueEditIdx !== null) {
+    showInfoModal("✏️ Une modification est en cours (élément " + (_queueEditIdx + 1) +
+      ").<br>Valide-la avec <b>✓ Mettre à jour</b> ou clique <b>Annuler</b> avant d'envoyer la file.");
+    return;
+  }
   // Vérifier si des items ont un bénéficiaire inconnu
   const hasUnknown = _txQueue.some(item => {
     const deb = (item.debtor||'').trim();
@@ -6961,7 +7072,7 @@ function submitQueue() {
     items.forEach(item => {
       if (item.type === 'prevision') {
         google.script.run
-          .withSuccessHandler(u=>{allPrevisions=u;renderPrevisions();updateProjection();})
+          .withSuccessHandler(u=>{allPrevisions=u;renderPrevisions();updateProjection();_checkUndoAvailable();})
           .addPrevision({date:item.date,description:item.desc,category_id:item.catId,amount:item.amount});
         return;
       }
@@ -7211,6 +7322,9 @@ function _doSaveSplitTx(payload) {
     .withSuccessHandler(function(updated) {
       if (!updated) { hideSpinner(); if (_txSaveQueue.length) setTimeout(_processNextInQueue, 300); return; }
       afterMutation(updated, 'Ajout transaction', updated.undoLabel || null);
+      // addSplitTransaction renvoie un tableau nu (pas d'undoLabel) alors que le
+      // snapshot existe bien côté GAS → on interroge le serveur (audit reco 3)
+      if (lines.length > 1) _checkUndoAvailable();
       if (_txSaveQueue.length) setTimeout(_processNextInQueue, 300);
     })
     .withFailureHandler(function(e) {
@@ -7261,6 +7375,7 @@ function saveTransaction() {
     google.script.run.withSuccessHandler(function(updated) {
       hideSpinner(); allPrevisions = updated;
       resetSplitForm(); renderPrevisions(); computeSoldes(); updateProjection();
+      _checkUndoAvailable(); // prévision annulable (audit reco 3)
       invalidateBudgetCache();
       var bs = document.getElementById('budgetSection');
       if (bs && bs.style.display !== 'none') loadBudget(true);
@@ -10258,6 +10373,7 @@ function confirmDelete() {
       hideSpinner();
       allPrevisions = updated;
       renderPrevisions();
+      _checkUndoAvailable(); // suppression de prévision annulable (audit reco 3)
     }).deletePrevision(id);
     return;
   }
@@ -10565,6 +10681,7 @@ function saveModalTransaction() {
         allPrevisions = updated;
         renderPrevisions();
         updateProjection();
+        _checkUndoAvailable(); // prévision annulable (audit reco 3)
       })
       .withFailureHandler(err => { hideSpinner(); console.error(err); })
       .addPrevision({ date, description: desc, category_id: catId, amount: amt });

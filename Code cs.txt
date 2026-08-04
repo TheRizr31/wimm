@@ -123,10 +123,24 @@ function _undoLastActionImpl() {
   switch (action) {
     case "addTransaction":
     case "addTransfer": {
-      // data.ids présent pour les ventilations/virements (toutes les lignes), sinon data.id seul
+      // data.ids présent pour ventilations/virements/file d'attente, sinon data.id seul
       const _undoIds = new Set((data.ids || [data.id]).map(String));
       for (let i = sheetData.length - 1; i >= 1; i--) {
         if (_undoIds.has(String(sheetData[i][idIndex]))) sheet.deleteRow(i + 1);
+      }
+      // File d'attente : le même lot a pu créer des prévisions → les retirer aussi
+      if (data.prevIds && data.prevIds.length) {
+        const _psU = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
+        if (_psU) {
+          const _pdU = _psU.getDataRange().getValues();
+          const _pIdIU = _pdU[0].map(String).indexOf("id");
+          if (_pIdIU >= 0) {
+            const _pSetU = new Set(data.prevIds.map(String));
+            for (let i = _pdU.length - 1; i >= 1; i--) {
+              if (_pSetU.has(String(_pdU[i][_pIdIU]))) _psU.deleteRow(i + 1);
+            }
+          }
+        }
       }
       break;
     }
@@ -396,6 +410,7 @@ function saveTheme(theme) {
 
 function withdrawFromProject(projectId, amount, description, date, accountId) { return _withScriptLock(function() { return _withdrawFromProjectImpl(projectId, amount, description, date, accountId); }); }
 function _withdrawFromProjectImpl(projectId, amount, description, date, accountId) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const planId = _getCurrentPlanId();
 
   let savingsCatId = "CAT001";
@@ -595,6 +610,7 @@ function getSavingsData() {
 }
 
 function addProject(name, target) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const planId = _getCurrentPlanId();
   let sheet = getSheet(SHEETS.PROJECTS);
   if (!sheet) {
@@ -607,6 +623,7 @@ function addProject(name, target) {
 }
 
 function updateProject(projectId, name, target) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const planId = _getCurrentPlanId();
   const sheet = getSheet(SHEETS.PROJECTS);
   if (!sheet) return [];
@@ -626,6 +643,7 @@ function updateProject(projectId, name, target) {
 }
 
 function deleteProject(projectId) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const planId = _getCurrentPlanId();
   const sheet = getSheet(SHEETS.PROJECTS);
   if (!sheet) return [];
@@ -642,6 +660,7 @@ function deleteProject(projectId) {
 }
 
 function saveProjectAllocations(allocations) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   // allocations = [{ id, allocated }, ...]
   const planId = _getCurrentPlanId();
   const sheet = getSheet(SHEETS.PROJECTS);
@@ -781,6 +800,7 @@ function _migrateAccounts() {
 }
 
 function addAccount(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   if (!form || !String(form.name || "").trim()) throw new Error("Nom de compte requis");
   const sheet = _getAccountsSheet();
   const planId = _getCurrentPlanId();
@@ -792,6 +812,7 @@ function addAccount(form) {
 }
 
 function updateAccount(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = _getAccountsSheet();
   const data = sheet.getDataRange().getValues();
   const m = _accountsHeaderMap(sheet);
@@ -805,6 +826,7 @@ function updateAccount(form) {
 }
 
 function setDefaultAccount(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = _getAccountsSheet();
   const data = sheet.getDataRange().getValues();
   const m = _accountsHeaderMap(sheet);
@@ -852,6 +874,7 @@ function _getAccountBalance(accountId) {
 }
 
 function toggleAccountActive(id, active) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = _getAccountsSheet();
   const data = sheet.getDataRange().getValues();
   const m = _accountsHeaderMap(sheet);
@@ -877,6 +900,7 @@ function toggleAccountActive(id, active) {
 }
 
 function deleteAccount(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   // CONTRÔLE SOLDE : suppression impossible si le compte n'est pas soldé
   // (solde négatif = découvert, positif = argent qui disparaîtrait)
   const _balDel = _getAccountBalance(id);
@@ -947,6 +971,7 @@ function _getCurrentPlanId() {
 }
 
 function saveCurrentPlan(planId) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   try {
     PropertiesService.getUserProperties().setProperty("currentPlanId", planId);
   } catch(e) {}
@@ -956,6 +981,7 @@ function saveCurrentPlan(planId) {
 
 // Fusion switchPlan + getInitialData en un seul appel GAS (évite double RTT)
 function switchPlanAndLoad(planId) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   try {
     PropertiesService.getUserProperties().setProperty("currentPlanId", planId);
   } catch(e) {}
@@ -965,6 +991,7 @@ function switchPlanAndLoad(planId) {
 }
 
 function addPlan(name, copyFromPlanId) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   // 1. Créer l'entrée dans la feuille Plans
   const planSheet = getSheet(SHEETS.PLANS);
   if (!planSheet) throw new Error("Feuille Plans introuvable");
@@ -1065,6 +1092,7 @@ function addPlan(name, copyFromPlanId) {
 }
 
 function renamePlan(id, name) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.PLANS);
   const data = sheet.getDataRange().getValues();
   const h = data[0];
@@ -1081,6 +1109,7 @@ function renamePlan(id, name) {
 }
 
 function deletePlan(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   // Refus de supprimer si c'est le seul plan
   const plans = _getPlans();
   if (plans.length <= 1) throw new Error("Impossible de supprimer le seul plan existant.");
@@ -2038,6 +2067,7 @@ function _saveBudgetBatchImpl(changes) {
 // (updateBudgetBatch) couvre la totalité du transfert.
 // parts = [{ category_id, amount }] — montants FINAUX de budget par catégorie destination.
 function transferBudget(period, srcId, srcBudget, parts) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   if (!period || !srcId) throw new Error("transferBudget: period et srcId obligatoires");
   const changes = [{ period: period, category_id: srcId, amount: Number(srcBudget) || 0 }]
     .concat((parts || []).map(function(p) {
@@ -2393,6 +2423,7 @@ function toggleClearedMultiple(ids) {
 
 // ================= LOCK ALL CLEARED =================
 function lockAllCleared() {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.TRANSACTIONS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -2704,11 +2735,15 @@ function _addBatchTransactionsImpl(items) {
   const accIdxBatch  = headers.indexOf("account_id");
   const _planBatch   = _getCurrentPlanId();
   // PERF : une seule écriture batch pour toute la file (au lieu d'une par TX)
+  const _batchTxIds = [];   // pour le snapshot d'annulation de la file
+  const _batchPrevIds = [];
   const txRows = txItems.map(item => {
     const f = item.form;
     const date = new Date(f.date);
     const row = new Array(headers.length).fill("");
-    row[idIdx]    = generateId("TX");
+    const _newTxId = generateId("TX");
+    _batchTxIds.push(_newTxId);
+    row[idIdx]    = _newTxId;
     row[dateIdx]  = date;
     row[periodIdx] = formatPeriod(date);
     row[descIdx]  = f.description || "";
@@ -2744,7 +2779,9 @@ function _addBatchTransactionsImpl(items) {
       const date = new Date(f.date);
       const period = formatPeriod(date);
       const row = new Array(ph.length).fill("");
-      row[piId]=generateId("PRV"); row[piDate]=date; row[piPer]=period;
+      const _newPrvId = generateId("PRV");
+      _batchPrevIds.push(_newPrvId);
+      row[piId]=_newPrvId; row[piDate]=date; row[piPer]=period;
       row[piDesc]=f.description||""; row[piCat]=f.category_id;
       row[piCNm]=catMap[f.category_id]||""; row[piAmt]=Math.abs(Number(f.amount)); row[piCrt]=now;
       const piPlan=ph.indexOf("plan_id"); if (piPlan>=0) row[piPlan]=_getCurrentPlanId();
@@ -2754,9 +2791,16 @@ function _addBatchTransactionsImpl(items) {
     });
   }
 
+  // File d'attente ANNULABLE (audit undo 04/08/2026) : le lot entier en 1 cran —
+  // le case "addTransaction" supprime les ids, et prevIds pour les prévisions du lot
+  if (_batchTxIds.length || _batchPrevIds.length) {
+    _saveUndoSnapshot("addTransaction", {
+      id: _batchTxIds[0] || "", ids: _batchTxIds, prevIds: _batchPrevIds
+    });
+  }
   const transactions = _safeReturnTx(_getAllTransactions(categories));
   const previsions   = JSON.parse(JSON.stringify(_getAllPrevisions(categories)));
-  return { transactions, previsions };
+  return { transactions, previsions, undoLabel: _getUndoLabel() };
 }
 
 function getAllTransactions() {
@@ -3117,6 +3161,7 @@ function _debtorNameIdx(headers) {
 }
 
 function addDebtor(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.DEBTORS);
   if (!sheet) throw new Error("Feuille Debiteurs introuvable");
   const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
@@ -3137,6 +3182,7 @@ function addDebtor(form) {
 }
 
 function updateDebtor(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.DEBTORS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -3155,6 +3201,7 @@ function updateDebtor(form) {
 }
 
 function deleteDebtor(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.DEBTORS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -3172,6 +3219,7 @@ function deleteDebtor(id) {
 
 // ================= CATEGORIES CRUD =================
 function addCategory(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.CATEGORIES);
   const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   const idIdx   = headers.indexOf("id");
@@ -3218,6 +3266,7 @@ function toggleCategoryActive(id, active) {
 }
 
 function updateCategory(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.CATEGORIES);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -3237,6 +3286,7 @@ function updateCategory(form) {
 }
 
 function deleteCategory(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   // ── GARDE-FOU INTÉGRITÉ ──
   // Supprimer une catégorie encore référencée créerait des TX "orphelines" dont les
   // dépenses deviennent INVISIBLES pour le budget (tout en restant dans les soldes)
@@ -3298,6 +3348,7 @@ function deleteCategory(id) {
 }
 
 function reorderCategories(newOrder) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.CATEGORIES);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -3386,6 +3437,7 @@ function _getBuckets(planId) {
 }
 
 function addBucket(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.BUCKETS);
   const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
   const idIdx   = headers.indexOf("id");
@@ -3407,6 +3459,7 @@ function addBucket(form) {
 }
 
 function updateBucket(form) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.BUCKETS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
@@ -3425,6 +3478,7 @@ function updateBucket(form) {
 }
 
 function deleteBucket(id) {
+  _clearUndo(); // action non annulable → ne pas laisser un snapshot antérieur (audit 04/08/2026)
   const sheet = getSheet(SHEETS.BUCKETS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
