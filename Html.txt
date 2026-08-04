@@ -13434,7 +13434,7 @@ function _renderHelp() {
         <li>Un <b>bénéficiaire connu</b> remplit sa catégorie tout seul ; un inconnu → l'app propose de le créer</li>
         <li>Coche <b>« Déjà sur le relevé »</b> pour créer la transaction directement pointée</li>
         <li><b>✂️ Ventiler</b> : un ticket sur plusieurs catégories — la somme des lignes doit égaler le total</li>
-        <li><b>File d'attente</b> : ajoute plusieurs saisies puis <b>✅ Soumettre tout</b> d'un coup</li>
+        <li><b>File d'attente</b> : ajoute plusieurs saisies puis <b>✅ Soumettre tout</b> d'un coup. Pour corriger un élément avant l'envoi, clique dessus (ou sur son <b>✏️</b>) : il revient dans le formulaire, tu corriges, puis <b>✓ Mettre à jour</b> — inutile de le supprimer et de tout resaisir. L'envoi entier s'annule d'un seul ↩</li>
         <li><b>↓ Revenu</b> : salaire → catégorie « À assigner » ; remboursement → sa catégorie d'origine</li>
       </ul>
       <button class="tour-btn" onclick="_tourStart('saisie')">▶ Me montrer pas à pas</button>`],
@@ -13493,7 +13493,9 @@ function _renderHelp() {
         <tr><td>« Le solde de ce compte est de X € »</td><td>on ne ferme pas un compte non soldé</td></tr>
         <tr><td>Bandeau ⚠️ dans Budget</td><td>incohérence détectée — suis la consigne affichée</td></tr>
       </table>
-      <p><b>↩ Annuler</b> : chaque action est annulable, mais seulement la <b>dernière</b>.</p>`],
+      <p><b>↩ Annuler</b> : la plupart des actions sont annulables, mais seulement la <b>dernière</b>. Bouton doré = quelque chose à annuler ; son infobulle dit <i>quelle</i> action — vérifie-la avant de confirmer.<br>
+      <b>Annulable</b> : saisie (simple, ventilée ou toute une file d'attente), modification / suppression / duplication de transaction, pointage, virement interne, réconciliation, budget, prévisions.<br>
+      <b>Non annulable</b> (le bouton s'éteint, il ne proposera jamais une action plus ancienne par erreur) : transfert entre catégories, retrait d'épargne, répartition des projets, et les Paramètres (catégories, groupes, tiers, comptes, plans).</p>`],
     ["🧭", "Routine conseillée & dépannage", "habitude frequence quand quotidien mensuel organisation panne marche pas lent recharger rafraichir version cache recuperer restaurer sauvegarde backup historique feuille sheets chiffre faux", `
       <p><b>Routine :</b> chaque jour, saisir (30 s) · chaque semaine, un œil au Budget (2 min) · à chaque relevé, pointer + réconcilier (5 min) · chaque début de mois : salaire → assigner à 0 → reporter le budget → vérifier la Trésorerie (10 min).</p>
       <p><b>Dépannage :</b></p>
