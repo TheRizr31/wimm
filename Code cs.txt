@@ -1510,7 +1510,9 @@ function _addSplitTransactionImpl(lines) {
 }
 
 // ================= UPDATE TRANSACTION =================
-function updateTransaction(form) {
+// Verrou d'écriture (comme les 11 autres mutations) — il manquait ici
+function updateTransaction(form) { return _withScriptLock(function() { return _updateTransactionImpl(form); }); }
+function _updateTransactionImpl(form) {
   _validateTxRefs(form.category_id, form.account_id, false);
   const sheet = getSheet(SHEETS.TRANSACTIONS);
   const data = sheet.getDataRange().getValues();
@@ -1532,11 +1534,11 @@ function updateTransaction(form) {
   for (let i = 1; i < data.length; i++) {
     if (data[i][idIndex] == form.id) {
       if (data[i][lockedIdx] === true || data[i][lockedIdx] === "TRUE" || data[i][lockedIdx] === 1) {
-        return { error: "locked", transactions: _getAllTransactions(categories) };
+        return _safeReturnObj({ error: "locked", transactions: _getAllTransactions(categories) });
       }
       // Une jambe de virement ne se modifie pas via l'édition standard (paire liée)
       if (tgIdxUpd >= 0 && data[i][tgIdxUpd]) {
-        return { error: "transfer", transactions: _getAllTransactions(categories) };
+        return _safeReturnObj({ error: "transfer", transactions: _getAllTransactions(categories) });
       }
       const oldRow = {};
       headers.forEach((h, col) => { oldRow[h] = data[i][col]; });
@@ -1568,7 +1570,7 @@ function updateTransaction(form) {
   }
   // Forcer l'écriture avant la relecture — sans flush GAS peut retourner l'ancienne ligne
   SpreadsheetApp.flush();
-  return { transactions: _getAllTransactions(categories), undoLabel: _getUndoLabel() };
+  return _safeReturnObj({ transactions: _getAllTransactions(categories), undoLabel: _getUndoLabel() });
 }
 
 // ================= DELETE TRANSACTION =================
@@ -2214,7 +2216,11 @@ function _getAllTransactions(categories, planId) {
     if (b.rawDate !== a.rawDate) return b.rawDate - a.rawDate;
     return b.rawCreated - a.rawCreated;
   });
-  return rows;
+  // Assainissement À LA SOURCE : certains champs sont renvoyés bruts (description,
+  // debtor, linked_prevision_id…) et Sheets a pu les convertir en Date. Une seule
+  // Date dans un retour google.script.run = réponse `null` côté frontend.
+  // Ainsi TOUT appelant est protégé, même sans _safeReturnTx.
+  return _safeReturnTx(rows);
 }
 
 // ================= TOGGLE CLEARED =================
@@ -2811,7 +2817,7 @@ function _getAllPrevisions(categories, planId) {
   }
 
   rows.sort((a,b) => b.rawDate - a.rawDate);
-  return rows;
+  return _safeReturnTx(rows); // même assainissement que les transactions (cf. ci-dessus)
 }
 
 function getPrevisions() {

@@ -10172,7 +10172,15 @@ function _doUpdateTransaction(form) {
   showSpinner();
   google.script.run
     .withSuccessHandler(function(result) {
-      if (!result) { hideSpinner(); return; } // GAS returned null → sécurité anti-spinner infini
+      if (!result) {
+        // réponse vide (sérialisation GAS) : la modification a pu aboutir en base
+        // → on le DIT et on resynchronise, au lieu d'un échec silencieux
+        hideSpinner();
+        showInfoModal("Réponse vide du serveur — la modification a peut-être abouti. Actualisation…");
+        if (typeof _refreshAll === "function") _refreshAll();
+        _checkUndoAvailable();
+        return;
+      }
       if (result.error === "locked") { hideSpinner(); showInfoModal("🔒 Transaction verrouillée, modification impossible."); return; }
       if (result.error === "transfer") { hideSpinner(); showInfoModal("↔ Cette transaction fait partie d'un virement interne — cliquez sur sa ligne pour voir/supprimer la paire."); return; }
       var updated = result.transactions || result;
