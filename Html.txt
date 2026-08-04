@@ -11461,25 +11461,31 @@ function confirmLockAll() {
 
 // ================= UNDO =================
 
+// Les DEUX boutons d'annulation doivent être mis à jour ensemble :
+// #undoNavBtn = bulle flottante (mobile) · #undoTopBtn = ↺ du header (desktop).
+// Sans .available, #undoTopBtn a pointer-events:none → le clic ne faisait RIEN.
 function _setUndoBtn(label) {
-  const navBtn = document.getElementById("undoNavBtn");
-  if (!navBtn) return;
-  if (label) {
-    navBtn.classList.add("available");
-    navBtn.title = "↩ Annuler : " + label;
-  } else {
-    navBtn.classList.remove("available");
-    navBtn.title = "Rien à annuler";
-  }
+  ["undoNavBtn", "undoTopBtn"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    if (label) {
+      btn.classList.add("available");
+      btn.title = "↩ Annuler : " + label;
+    } else {
+      btn.classList.remove("available");
+      btn.title = "Rien à annuler";
+    }
+  });
 }
 
 function showUndoBar(label) { _setUndoBtn(label); }
 function closeUndoBar()     { _setUndoBtn(null);  }
 
 function doUndo() {
-  const navBtn = document.getElementById("undoNavBtn");
-  if (!navBtn || !navBtn.classList.contains("available")) return;
-  const label = navBtn.title.replace("↩ Annuler : ", "").trim() || "Dernière action";
+  // l'un OU l'autre des deux boutons (mobile / desktop) porte l'état
+  const btn = document.querySelector("#undoNavBtn.available, #undoTopBtn.available");
+  if (!btn) return;
+  const label = btn.title.replace("↩ Annuler : ", "").trim() || "Dernière action";
   document.getElementById("undoPopupAction").textContent = label;
   const popup = document.getElementById("undoPopup");
   if (popup) popup.classList.add("visible");
@@ -11493,9 +11499,8 @@ function closeUndoPopup() {
 
 function doUndoConfirmed() {
   closeUndoPopup();
-  // Désactiver le bouton immédiatement (feedback visuel instantané)
-  const navBtn = document.getElementById("undoNavBtn");
-  if (navBtn) navBtn.classList.remove("available");
+  // Désactiver les deux boutons immédiatement (feedback visuel instantané)
+  _setUndoBtn(null);
   showSpinner();
 
   google.script.run
