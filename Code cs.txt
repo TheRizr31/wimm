@@ -1585,6 +1585,29 @@ function _deleteTransactionImpl(id) {
 }
 
 // ================= BUDGET =================
+// Liste des périodes ayant AU MOINS une ligne de budget ≠ 0 pour le plan actif.
+// Utilisé par la Trésorerie pour étendre sa plage aux mois budgétés sans TX/prévision.
+function getBudgetPeriods() {
+  const sheet = getSheet(SHEETS.BUDGETS);
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+  const h = data[0].map(String);
+  const pI = h.indexOf("period"), planI = h.indexOf("plan_id"), bI = h.indexOf("budgeted");
+  if (pI < 0 || bI < 0) return [];
+  const planId = _getCurrentPlanId();
+  const out = {};
+  for (let i = 1; i < data.length; i++) {
+    if (planI >= 0 && String(data[i][planI]) !== String(planId)) continue;
+    if (!(Number(data[i][bI]) || 0)) continue; // 0/vide ignoré, négatif compté (retrait planifié)
+    let p = data[i][pI];
+    if (p instanceof Date) p = formatPeriod(p);
+    p = String(p || "").trim();
+    if (/^\d{2}\/\d{4}$/.test(p)) out[p] = true;
+  }
+  return Object.keys(out);
+}
+
 function getBudgetByPeriod(period) {
   // =========================================================
   // HELPERS (Sécurités de lecture)

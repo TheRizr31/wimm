@@ -8255,6 +8255,7 @@ function invalidateBudgetCache(period) {
     _budgetCache = {};
     window._budgetPeriodTotals = {};
   }
+  window._suiviBudgetPeriods = undefined; // liste des mois budgétés (Trésorerie) à recharger
 }
 
 function loadBudget(force, silent) {
@@ -14049,10 +14050,21 @@ function renderSuiviTable() {
   // ── Afficher une plage CONTINUE du mois courant au dernier mois utile ──
   // Un mois sans TX ni prévision mais avec du budget (ex. 10/2026) sautait :
   // chaîne de soldes faussée (09 → 11 direct) et cumul épargne ignorant ses budgets.
-  // Dernier mois utile = max(TX/prévisions) ∪ budgets déjà chargés (> 0) ;
-  // les trous intermédiaires sont comblés (leurs budgets seront chargés plus bas).
+  // Dernier mois utile = max(TX/prévisions) ∪ mois budgétés (liste GAS getBudgetPeriods,
+  // chargée une fois puis mise en cache — invalidée avec le cache budget).
+  if (window._suiviBudgetPeriods === undefined) {
+    window._suiviBudgetPeriods = null; // chargement en cours
+    google.script.run
+      .withSuccessHandler(function(list) { window._suiviBudgetPeriods = list || []; renderSuiviTable(); })
+      .withFailureHandler(function() { window._suiviBudgetPeriods = []; })
+      .getBudgetPeriods();
+  }
   let _lastKey = nowKey;
   sorted.forEach(p => { const k = parse(p); if (k > _lastKey) _lastKey = k; });
+  (window._suiviBudgetPeriods || []).forEach(p => {
+    const k = parse(p);
+    if (k > _lastKey && k <= nowKey + 24) _lastKey = k; // garde-fou 24 mois
+  });
   Object.keys(window._budgetPeriodTotals || {}).forEach(p => {
     const k = parse(p);
     if (k > _lastKey && k <= nowKey + 24 && (window._budgetPeriodTotals[p] || 0) > 0) _lastKey = k;
