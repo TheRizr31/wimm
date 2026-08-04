@@ -11506,7 +11506,14 @@ function doUndoConfirmed() {
   google.script.run
     .withSuccessHandler(result => {
       hideSpinner();
-      if (!result) { showInfoModal("Rien à annuler."); return; }
+      if (!result) {
+        // réponse vide = échec de sérialisation côté GAS, PAS "rien à annuler"
+        // (l'annulation a pu aboutir en base) → on resynchronise au lieu de mentir
+        showInfoModal("Réponse vide du serveur — l'annulation a peut-être abouti. Actualisation…");
+        _checkUndoAvailable();
+        if (typeof _refreshAll === "function") _refreshAll();
+        return;
+      }
       if (result.error) { showInfoModal("❌ " + result.error); return; }
       if (result.transactions) refreshHistory(result.transactions);
       if (result.previsions) {

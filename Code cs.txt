@@ -56,6 +56,21 @@ function formatPeriod(date) {
   return Utilities.formatDate(date, Session.getScriptTimeZone(), "MM/yyyy");
 }
 
+// period TOUJOURS renvoyé en TEXTE "MM/YYYY" au frontend.
+// Certaines cellules period ont été converties en Date par Sheets (anciens retraits
+// d'épargne écrits via appendRow) : un objet Date dans un retour google.script.run
+// casse la sérialisation → le frontend reçoit null (bug "Rien à annuler" du undo).
+function _periodToText(v) {
+  if (v instanceof Date) return formatPeriod(v);
+  return v === undefined || v === null ? "" : String(v).trim();
+}
+
+// Ceinture générique : neutralise tout objet non sérialisable (Date…) dans un retour.
+// À utiliser sur les retours composites ({transactions, budget, previsions…}).
+function _safeReturnObj(obj) {
+  try { return JSON.parse(JSON.stringify(obj)); } catch(e) { return { error: "Sérialisation impossible : " + e.message }; }
+}
+
 // ================= UNDO SYSTEM =================
 function _saveUndoSnapshot(action, data) {
   PropertiesService.getScriptProperties()
@@ -211,7 +226,7 @@ function _undoLastActionImpl() {
       }
       _clearUndo();
       const cats = _getCategories();
-      return { budget: getBudgetByPeriod(data.period), period: data.period, transactions: _getAllTransactions(cats) };
+      return _safeReturnObj({ budget: getBudgetByPeriod(data.period), period: data.period, transactions: _getAllTransactions(cats) });
     }
     case "updateBudgetBatch": {
       const budgetSheet = getSheet(SHEETS.BUDGETS);
@@ -233,7 +248,7 @@ function _undoLastActionImpl() {
       });
       _clearUndo();
       const cats = _getCategories();
-      return { budget: getBudgetByPeriod(data.period), period: data.period, transactions: _getAllTransactions(cats) };
+      return _safeReturnObj({ budget: getBudgetByPeriod(data.period), period: data.period, transactions: _getAllTransactions(cats) });
     }
     case "addPrevision": {
       const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
@@ -245,7 +260,7 @@ function _undoLastActionImpl() {
         }
       }
       _clearUndo();
-      { const _ua = _getCategories(); return { previsions: _getAllPrevisions(_ua), transactions: _getAllTransactions(_ua) }; }
+      { const _ua = _getCategories(); return _safeReturnObj({ previsions: _getAllPrevisions(_ua), transactions: _getAllTransactions(_ua) }); }
     }
     case "updatePrevision": {
       const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
@@ -262,7 +277,7 @@ function _undoLastActionImpl() {
         }
       }
       _clearUndo();
-      { const _uc = _getCategories(); return { previsions: _getAllPrevisions(_uc), transactions: _getAllTransactions(_uc) }; }
+      { const _uc = _getCategories(); return _safeReturnObj({ previsions: _getAllPrevisions(_uc), transactions: _getAllTransactions(_uc) }); }
     }
     case "deletePrevision": {
       const ps = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
@@ -272,13 +287,13 @@ function _undoLastActionImpl() {
         ps.appendRow(row);
       }
       _clearUndo();
-      { const _ud = _getCategories(); return { previsions: _getAllPrevisions(_ud), transactions: _getAllTransactions(_ud) }; }
+      { const _ud = _getCategories(); return _safeReturnObj({ previsions: _getAllPrevisions(_ud), transactions: _getAllTransactions(_ud) }); }
     }
   } // fin switch
 
   _clearUndo();
   const categories = _getCategories();
-  return { transactions: _getAllTransactions(categories) };
+  return _safeReturnObj({ transactions: _getAllTransactions(categories) });
 }
 
 // ================= INITIAL DATA =================
@@ -2181,7 +2196,7 @@ function _getAllTransactions(categories, planId) {
       date: formattedDate,
       rawDate,
       rawCreated,
-      period: row[periodIndex],
+      period: _periodToText(row[periodIndex]),
       description: row[descriptionIndex],
       category_id: categoryId,
       category: categoryMap[categoryId] || "",
@@ -2785,7 +2800,7 @@ function _getAllPrevisions(categories, planId) {
       id:          r[idIndex],
       date:        formattedDate,
       rawDate,
-      period:      r[periodIndex],
+      period:      _periodToText(r[periodIndex]),
       description: r[descIndex],
       category_id: r[catIdIndex],
       category:    catMap[r[catIdIndex]] || "",
