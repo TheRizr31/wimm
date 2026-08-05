@@ -2267,33 +2267,35 @@ function _getAllTransactions(categories, planId) {
 // contenu de cette réponse (il applique l'état CIBLE demandé) → payload minimal.
 function toggleCleared(id, desired) {
   const sheet = getSheet(SHEETS.TRANSACTIONS);
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const idIndex = headers.indexOf("id");
-  const clearedIndex = headers.indexOf("cleared");
-  const lockedIndexTC = headers.indexOf("locked");
-  let _found = false, _newVal = null;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idIndex] == id) {
-      _found = true;
-      // Refus explicite si verrouillée (le frontend le vérifie déjà, ceinture serveur)
-      if (lockedIndexTC >= 0 &&
-          (data[i][lockedIndexTC] === true || data[i][lockedIndexTC] === "TRUE" || data[i][lockedIndexTC] === 1)) {
-        return { error: "locked", id: id };
-      }
-      const current = data[i][clearedIndex] === true || data[i][clearedIndex] === "TRUE" || data[i][clearedIndex] === 1;
-      // État CIBLE si fourni (idempotent : un double-appel ne re-bascule pas),
-      // sinon flip (rétro-compatible avec un frontend en cache)
-      _newVal = (desired === undefined || desired === null || desired === "")
-        ? !current
-        : (desired === true || desired === "true");
-      _saveUndoSnapshot("toggleCleared", { oldStates: { [id]: current } });
-      sheet.getRange(i + 1, clearedIndex + 1).setValue(_newVal);
-      break;
-    }
-  }
-  if (!_found) return { error: "notfound", id: id };
-  return { ok: true, id: id, cleared: _newVal, undoLabel: _getUndoLabel() };
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { error: "notfound", id: id };
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const idCol      = headers.indexOf("id") + 1;        // 1-based
+  const clearedCol = headers.indexOf("cleared") + 1;
+  const lockedCol  = headers.indexOf("locked") + 1;
+  if (idCol < 1 || clearedCol < 1) return { error: "notfound", id: id };
+
+  // Recherche CIBLÉE dans la seule colonne id (TextFinder côté serveur) : évite de
+  // charger toute la feuille pour trouver une ligne — c'était ~1 à 3 s de latence.
+  const cell = sheet.getRange(2, idCol, lastRow - 1, 1)
+    .createTextFinder(String(id)).matchEntireCell(true).findNext();
+  if (!cell) return { error: "notfound", id: id };
+  const row = cell.getRow();
+
+  // Une seule lecture pour locked + cleared
+  const rowVals = sheet.getRange(row, 1, 1, headers.length).getValues()[0];
+  const _isTrue = v => v === true || v === "TRUE" || v === 1;
+  if (lockedCol >= 1 && _isTrue(rowVals[lockedCol - 1])) return { error: "locked", id: id };
+
+  const current = _isTrue(rowVals[clearedCol - 1]);
+  // État CIBLE si fourni (idempotent : un double-appel ne re-bascule pas),
+  // sinon flip (rétro-compatible avec un frontend en cache)
+  const newVal = (desired === undefined || desired === null || desired === "")
+    ? !current
+    : (desired === true || desired === "true");
+  _saveUndoSnapshot("toggleCleared", { oldStates: { [id]: current } });
+  sheet.getRange(row, clearedCol).setValue(newVal);
+  return { ok: true, id: id, cleared: newVal, undoLabel: _getUndoLabel() };
 }
 
 // ================= BULK DELETE =================

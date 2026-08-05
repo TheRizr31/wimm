@@ -9920,8 +9920,8 @@ function closeBulkDeleteModal() {
 // ================= POINTAGE SIMPLE =================
 // Pointages en cours d'écriture (anti double-clic / ghost-tap : un clic pendant
 // l'aller-retour serveur est ignoré au lieu de re-basculer l'état)
-// Map id → timestamp (avant : Set, donc un verrou jamais retiré bloquait la ligne à vie)
-window._clearedInFlight = (window._clearedInFlight instanceof Map) ? window._clearedInFlight : new Map();
+// (ancien verrou _clearedInFlight supprimé @661 : le pointage n'est plus bloquant,
+//  voir _scheduleClearedSend / _flushClearedSend — "dernier clic gagne")
 
 // Message léger, non bloquant (aucune modale à fermer)
 function _toast(msg, ms) {
@@ -9954,21 +9954,13 @@ function handleToggleCleared(id, e) {
            "Clique le 🔓 de la ligne pour la déverrouiller d'abord.", 4500);
     return;
   }
-  // Verrou À DURÉE LIMITÉE : si une réponse s'est perdue, un nouveau clic reprend la
-  // main au bout de 6 s (avant : blocage définitif = "plus rien ne se passe")
-  const _prevTs = window._clearedInFlight.get(id);
-  if (_prevTs && Date.now() - _prevTs < 6000) {
-    _toast("⏳ Enregistrement de cette ligne en cours…", 1800);
-    return;
-  }
-  window._clearedInFlight.set(id, Date.now());
-
-  // Optimistic UI: mise à jour visuelle immédiate, sans re-render complet
-  const desired = !tx.cleared; // état CIBLE envoyé au serveur (idempotent, pas un flip)
+  // ── AUCUN BLOCAGE : le clic est toujours accepté (un misclick se corrige aussitôt).
+  // L'écriture serveur étant idempotente (état CIBLE), on applique "dernier clic
+  // gagne" : l'affichage bascule tout de suite, l'envoi est différé de 400 ms pour
+  // agréger les clics rapides, et une réponse périmée est ignorée.
+  const desired = !tx.cleared;
   tx.cleared = desired;
-  // L'AFFICHAGE NE DOIT JAMAIS EMPÊCHER L'ENREGISTREMENT : si une de ces fonctions
-  // lève une exception, l'appel GAS ci-dessous n'était jamais émis → verrou posé et
-  // pointage perdu, sans le moindre message (bug "rien ne se passe au 2e clic").
+  // L'affichage ne doit jamais empêcher l'enregistrement → try/catch
   try {
     _patchRow(id);
     computeSoldes();
@@ -9977,46 +9969,59 @@ function handleToggleCleared(id, e) {
     _toast("⚠️ Souci d'affichage — le pointage est quand même envoyé :<br><small>" +
            _esc(err && err.message ? err.message : String(err)) + "</small>", 6000);
   }
+  _scheduleClearedSend(id, desired);
+}
 
-  // Filet : si la réponse GAS se perd (aucun handler appelé), on retire le verrou
-  const _clrGuard = setTimeout(() => window._clearedInFlight.delete(id), 25000);
+// État d'envoi par transaction : { desired, seq, timer, inFlight }
+window._clrSend = window._clrSend || {};
+
+function _scheduleClearedSend(id, desired) {
+  const st = window._clrSend[id] || (window._clrSend[id] = { seq: 0, timer: 0, inFlight: false });
+  st.desired = desired;
+  st.seq++;                       // toute nouvelle intention périme les précédentes
+  clearTimeout(st.timer);
+  st.timer = setTimeout(() => _flushClearedSend(id), 400); // debounce anti-misclick
+}
+
+function _flushClearedSend(id) {
+  const st = window._clrSend[id];
+  if (!st || st.inFlight) return; // un envoi est en cours : on renverra à sa réponse
+  const mySeq = st.seq, myDesired = st.desired;
+  st.inFlight = true;
+
+  const _finish = () => {
+    st.inFlight = false;
+    if (st.seq !== mySeq) { _flushClearedSend(id); return true; } // l'utilisateur a recliqué → renvoyer l'état final
+    delete window._clrSend[id];
+    return false;
+  };
 
   google.script.run
     .withSuccessHandler(res => {
-      clearTimeout(_clrGuard);
-      window._clearedInFlight.delete(id);
-      // Réponse LÉGÈRE depuis @660 ({ok, id, cleared, undoLabel}) : on ne remplace
-      // jamais allTransactions (une réponse tardive écraserait des pointages plus
-      // récents) et l'état appliqué est celui confirmé par le serveur.
+      const tx = allTransactions.find(x => x.id === id);
       if (res && res.error === "locked") {
-        tx.locked = true; tx.cleared = !desired;
+        st.inFlight = false; delete window._clrSend[id];
+        if (tx) { tx.locked = true; tx.cleared = !myDesired; }
         try { _patchRow(id); computeSoldes(); computeSubtotal(_getFilteredTransactions()); } catch(e) {}
         _toast("🔒 Transaction verrouillée côté serveur — pointage inchangé.", 4000);
         return;
       }
-      tx.cleared = (res && typeof res.cleared === "boolean") ? res.cleared : desired;
-      try {
-        computeSoldes();
-        computeSubtotal(_getFilteredTransactions());
-        _patchRow(id);
-      } catch(e) {}
-      // undoLabel fourni par la réponse → plus besoin d'un 2e aller-retour GAS
-      if (res && res.undoLabel) _setUndoBtn(res.undoLabel); else _checkUndoAvailable();
+      if (res && res.undoLabel) _setUndoBtn(res.undoLabel);
+      if (_finish()) return;      // une intention plus récente est repartie
+      if (tx && res && typeof res.cleared === "boolean" && tx.cleared !== res.cleared) {
+        tx.cleared = res.cleared; // aligner sur la vérité serveur si divergence
+        try { _patchRow(id); computeSoldes(); computeSubtotal(_getFilteredTransactions()); } catch(e) {}
+      }
     })
     .withFailureHandler(err => {
-      clearTimeout(_clrGuard);
-      window._clearedInFlight.delete(id);
-      tx.cleared = !desired; // rollback visuel
-      try {
-        _patchRow(id);
-        computeSoldes();
-        computeSubtotal(_getFilteredTransactions());
-      } catch(e) {}
-      // L'échec était MUET : la coche revenait en arrière sans explication
+      if (_finish()) return;      // un nouvel envoi part : ne pas annuler l'affichage
+      const tx = allTransactions.find(x => x.id === id);
+      if (tx) tx.cleared = !myDesired; // rollback visuel
+      try { _patchRow(id); computeSoldes(); computeSubtotal(_getFilteredTransactions()); } catch(e) {}
       _toast("❌ Pointage non enregistré :<br><small>" +
              _esc(err && err.message ? err.message : String(err)) + "</small>", 6000);
     })
-    .toggleCleared(id, desired);
+    .toggleCleared(id, myDesired);
 }
 
 function _patchRow(id) {
