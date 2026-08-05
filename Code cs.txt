@@ -1655,6 +1655,7 @@ function getBudgetPeriods() {
 }
 
 function getBudgetByPeriod(period) {
+  try { SpreadsheetApp.flush(); } catch(e) {} // relecture juste après saveBudget → éviter l'ancienne valeur
   // =========================================================
   // HELPERS (Sécurités de lecture)
   // =========================================================
@@ -2172,6 +2173,10 @@ function saveBudgetNote(period, category_id, note) {
 
 // ================= HISTORIQUE =================
 function _getAllTransactions(categories, planId) {
+  // Valider les écritures en attente AVANT de relire : sans flush, GAS peut renvoyer
+  // l'ancienne valeur juste après un setValue (pointage qui "revient tout seul").
+  // Placé ici = TOUS les appelants sont protégés (une seule fonction à maintenir).
+  try { SpreadsheetApp.flush(); } catch(e) {}
   const sheet = getSheet(SHEETS.TRANSACTIONS);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
@@ -2809,6 +2814,7 @@ function getAllTransactions() {
 
 // ================= PREVISIONS =================
 function _getAllPrevisions(categories, planId) {
+  try { SpreadsheetApp.flush(); } catch(e) {} // idem _getAllTransactions : relire après écriture
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEETS.PREVISIONS);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();

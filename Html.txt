@@ -9914,6 +9914,9 @@ function handleToggleCleared(id, e) {
   if (!tx || tx.locked) return;
   if (window._clearedInFlight.has(id)) return; // écriture déjà en cours sur cette TX
   window._clearedInFlight.add(id);
+  // Filet : si la réponse GAS se perd (aucun handler appelé), le verrou serait posé
+  // à vie et la ligne deviendrait impointable. On le libère au bout de 25 s.
+  const _clrGuard = setTimeout(() => window._clearedInFlight.delete(id), 25000);
 
   // Optimistic UI: mise à jour visuelle immédiate, sans re-render complet
   tx.cleared = !tx.cleared;
@@ -9924,18 +9927,24 @@ function handleToggleCleared(id, e) {
 
   google.script.run
     .withSuccessHandler(updated => {
+      clearTimeout(_clrGuard);
       window._clearedInFlight.delete(id);
       // NE PAS remplacer allTransactions entier : une réponse tardive écraserait
       // les pointages optimistes plus récents des autres lignes (bug "ça se re-clique
-      // tout seul"). On ne confirme que CETTE transaction.
-      const srvTx = Array.isArray(updated) ? updated.find(x => x.id === id) : null;
-      if (srvTx) tx.cleared = !!srvTx.cleared;
+      // tout seul").
+      // Et NE PAS relire l'état dans la réponse : l'écriture serveur est idempotente
+      // (état CIBLE), donc après un succès la vérité EST `desired`. Se fier à la
+      // réponse rendait le pointage tributaire d'une lecture parfois périmée côté
+      // GAS → la ligne revenait à son état précédent (bug "impossible de cliquer
+      // 2 fois de suite").
+      tx.cleared = desired;
       computeSoldes();
       computeSubtotal(_getFilteredTransactions());
       _checkUndoAvailable();
       _patchRow(id);
     })
     .withFailureHandler(() => {
+      clearTimeout(_clrGuard);
       window._clearedInFlight.delete(id);
       tx.cleared = !desired; // rollback visuel
       _patchRow(id);
