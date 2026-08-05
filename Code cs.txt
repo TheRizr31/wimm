@@ -2259,29 +2259,41 @@ function _getAllTransactions(categories, planId) {
 }
 
 // ================= TOGGLE CLEARED =================
+// PERF (05/08/2026) : cocher UNE case ne doit pas relire et renvoyer TOUTE la feuille.
+// L'ancienne version retournait _getAllTransactions() (des milliers de lignes + 2
+// sérialisations JSON) : plusieurs secondes de réponse, pendant lesquelles le verrou
+// anti-double-clic du frontend restait posé → "impossible de cliquer 2 fois de suite"
+// alors que l'écriture, elle, avait bien abouti. Le frontend n'utilise plus le
+// contenu de cette réponse (il applique l'état CIBLE demandé) → payload minimal.
 function toggleCleared(id, desired) {
   const sheet = getSheet(SHEETS.TRANSACTIONS);
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
   const idIndex = headers.indexOf("id");
   const clearedIndex = headers.indexOf("cleared");
+  const lockedIndexTC = headers.indexOf("locked");
+  let _found = false, _newVal = null;
   for (let i = 1; i < data.length; i++) {
     if (data[i][idIndex] == id) {
+      _found = true;
+      // Refus explicite si verrouillée (le frontend le vérifie déjà, ceinture serveur)
+      if (lockedIndexTC >= 0 &&
+          (data[i][lockedIndexTC] === true || data[i][lockedIndexTC] === "TRUE" || data[i][lockedIndexTC] === 1)) {
+        return { error: "locked", id: id };
+      }
       const current = data[i][clearedIndex] === true || data[i][clearedIndex] === "TRUE" || data[i][clearedIndex] === 1;
       // État CIBLE si fourni (idempotent : un double-appel ne re-bascule pas),
       // sinon flip (rétro-compatible avec un frontend en cache)
-      const newVal = (desired === undefined || desired === null || desired === "")
+      _newVal = (desired === undefined || desired === null || desired === "")
         ? !current
         : (desired === true || desired === "true");
       _saveUndoSnapshot("toggleCleared", { oldStates: { [id]: current } });
-      sheet.getRange(i + 1, clearedIndex + 1).setValue(newVal);
+      sheet.getRange(i + 1, clearedIndex + 1).setValue(_newVal);
       break;
     }
   }
-  const categories = _getCategories();
-  const _toggleClearedResult = _safeReturnTx(_getAllTransactions(categories));
-  if (_toggleClearedResult && typeof _toggleClearedResult === 'object') _toggleClearedResult.undoLabel = _getUndoLabel();
-  return _toggleClearedResult;
+  if (!_found) return { error: "notfound", id: id };
+  return { ok: true, id: id, cleared: _newVal, undoLabel: _getUndoLabel() };
 }
 
 // ================= BULK DELETE =================

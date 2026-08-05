@@ -9982,24 +9982,26 @@ function handleToggleCleared(id, e) {
   const _clrGuard = setTimeout(() => window._clearedInFlight.delete(id), 25000);
 
   google.script.run
-    .withSuccessHandler(updated => {
+    .withSuccessHandler(res => {
       clearTimeout(_clrGuard);
       window._clearedInFlight.delete(id);
-      // NE PAS remplacer allTransactions entier : une réponse tardive écraserait
-      // les pointages optimistes plus récents des autres lignes (bug "ça se re-clique
-      // tout seul").
-      // Et NE PAS relire l'état dans la réponse : l'écriture serveur est idempotente
-      // (état CIBLE), donc après un succès la vérité EST `desired`. Se fier à la
-      // réponse rendait le pointage tributaire d'une lecture parfois périmée côté
-      // GAS → la ligne revenait à son état précédent (bug "impossible de cliquer
-      // 2 fois de suite").
-      tx.cleared = desired;
+      // Réponse LÉGÈRE depuis @660 ({ok, id, cleared, undoLabel}) : on ne remplace
+      // jamais allTransactions (une réponse tardive écraserait des pointages plus
+      // récents) et l'état appliqué est celui confirmé par le serveur.
+      if (res && res.error === "locked") {
+        tx.locked = true; tx.cleared = !desired;
+        try { _patchRow(id); computeSoldes(); computeSubtotal(_getFilteredTransactions()); } catch(e) {}
+        _toast("🔒 Transaction verrouillée côté serveur — pointage inchangé.", 4000);
+        return;
+      }
+      tx.cleared = (res && typeof res.cleared === "boolean") ? res.cleared : desired;
       try {
         computeSoldes();
         computeSubtotal(_getFilteredTransactions());
         _patchRow(id);
       } catch(e) {}
-      _checkUndoAvailable();
+      // undoLabel fourni par la réponse → plus besoin d'un 2e aller-retour GAS
+      if (res && res.undoLabel) _setUndoBtn(res.undoLabel); else _checkUndoAvailable();
     })
     .withFailureHandler(err => {
       clearTimeout(_clrGuard);
