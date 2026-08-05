@@ -2156,6 +2156,19 @@
       padding:0 12px calc(env(safe-area-inset-bottom,0px) + 90px);
     }
 
+    /* ══ Toast léger (messages non bloquants) ══ */
+    .wimm-toast {
+      position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 170px);
+      transform: translateX(-50%) translateY(14px);
+      background: rgba(20,20,24,0.97); color: #fff;
+      border: 1px solid rgba(251,215,47,0.45); border-radius: 12px;
+      padding: 12px 18px; font-size: 14px; line-height: 1.45; text-align: center;
+      max-width: min(92vw, 430px); z-index: 9500;
+      opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.55);
+    }
+    .wimm-toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* ══ Sous-total compact en haut des transactions ══ */
     .tx-subtotal {
       background:#1C1C1E; border-radius:12px;
@@ -4306,6 +4319,8 @@
   .drawer-account-soldes .das-name { font-size: 14px !important; }
   .drawer-account-soldes .das-val  { font-size: 15px !important; }
   .drawer-account-soldes .das-row  { padding: 4px 0 !important; }
+  /* Toast : pas de nav bar sur desktop → plus bas */
+  .wimm-toast { bottom: 28px !important; font-size: 13.5px !important; }
   /* Barre 💾 épargne : au-dessus de la nav pill (~145px) au lieu de la chevaucher */
   .savings-save-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 158px) !important; }
   /* Trésorerie : tableau lisible + scroll horizontal */
@@ -9905,25 +9920,66 @@ function closeBulkDeleteModal() {
 // ================= POINTAGE SIMPLE =================
 // Pointages en cours d'écriture (anti double-clic / ghost-tap : un clic pendant
 // l'aller-retour serveur est ignoré au lieu de re-basculer l'état)
-window._clearedInFlight = window._clearedInFlight || new Set();
+// Map id → timestamp (avant : Set, donc un verrou jamais retiré bloquait la ligne à vie)
+window._clearedInFlight = (window._clearedInFlight instanceof Map) ? window._clearedInFlight : new Map();
+
+// Message léger, non bloquant (aucune modale à fermer)
+function _toast(msg, ms) {
+  let el = document.getElementById("wimmToast");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "wimmToast";
+    el.className = "wimm-toast";
+    document.body.appendChild(el);
+  }
+  el.innerHTML = msg;
+  el.classList.add("visible");
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.remove("visible"), ms || 2800);
+}
 
 function handleToggleCleared(id, e) {
   if (e) { e.stopPropagation(); e.preventDefault(); }
   closeAllMenus();
   const tx = allTransactions.find(x => x.id === id);
-  if (!tx || tx.locked) return;
-  if (window._clearedInFlight.has(id)) return; // écriture déjà en cours sur cette TX
-  window._clearedInFlight.add(id);
-  // Filet : si la réponse GAS se perd (aucun handler appelé), le verrou serait posé
-  // à vie et la ligne deviendrait impointable. On le libère au bout de 25 s.
-  const _clrGuard = setTimeout(() => window._clearedInFlight.delete(id), 25000);
+  // ── Les 3 refus étaient SILENCIEUX ("je clique et rien ne se passe") : on dit
+  //    toujours pourquoi, sinon le blocage est indiscernable d'un bug.
+  if (!tx) {
+    _toast("↻ Cette ligne n'est plus à jour dans l'app — actualisation en cours…");
+    if (typeof _refreshAll === "function") _refreshAll();
+    return;
+  }
+  if (tx.locked) {
+    _toast("🔒 <b>Transaction verrouillée</b> (réconciliée) : son pointage est protégé.<br>" +
+           "Clique le 🔓 de la ligne pour la déverrouiller d'abord.", 4500);
+    return;
+  }
+  // Verrou À DURÉE LIMITÉE : si une réponse s'est perdue, un nouveau clic reprend la
+  // main au bout de 6 s (avant : blocage définitif = "plus rien ne se passe")
+  const _prevTs = window._clearedInFlight.get(id);
+  if (_prevTs && Date.now() - _prevTs < 6000) {
+    _toast("⏳ Enregistrement de cette ligne en cours…", 1800);
+    return;
+  }
+  window._clearedInFlight.set(id, Date.now());
 
   // Optimistic UI: mise à jour visuelle immédiate, sans re-render complet
-  tx.cleared = !tx.cleared;
-  const desired = tx.cleared; // état CIBLE envoyé au serveur (idempotent, pas un flip)
-  _patchRow(id);
-  computeSoldes();
-  computeSubtotal(_getFilteredTransactions()); // total pointé de la barre en direct
+  const desired = !tx.cleared; // état CIBLE envoyé au serveur (idempotent, pas un flip)
+  tx.cleared = desired;
+  // L'AFFICHAGE NE DOIT JAMAIS EMPÊCHER L'ENREGISTREMENT : si une de ces fonctions
+  // lève une exception, l'appel GAS ci-dessous n'était jamais émis → verrou posé et
+  // pointage perdu, sans le moindre message (bug "rien ne se passe au 2e clic").
+  try {
+    _patchRow(id);
+    computeSoldes();
+    computeSubtotal(_getFilteredTransactions()); // total pointé de la barre en direct
+  } catch (err) {
+    _toast("⚠️ Souci d'affichage — le pointage est quand même envoyé :<br><small>" +
+           _esc(err && err.message ? err.message : String(err)) + "</small>", 6000);
+  }
+
+  // Filet : si la réponse GAS se perd (aucun handler appelé), on retire le verrou
+  const _clrGuard = setTimeout(() => window._clearedInFlight.delete(id), 25000);
 
   google.script.run
     .withSuccessHandler(updated => {
@@ -9938,18 +9994,25 @@ function handleToggleCleared(id, e) {
       // GAS → la ligne revenait à son état précédent (bug "impossible de cliquer
       // 2 fois de suite").
       tx.cleared = desired;
-      computeSoldes();
-      computeSubtotal(_getFilteredTransactions());
+      try {
+        computeSoldes();
+        computeSubtotal(_getFilteredTransactions());
+        _patchRow(id);
+      } catch(e) {}
       _checkUndoAvailable();
-      _patchRow(id);
     })
-    .withFailureHandler(() => {
+    .withFailureHandler(err => {
       clearTimeout(_clrGuard);
       window._clearedInFlight.delete(id);
       tx.cleared = !desired; // rollback visuel
-      _patchRow(id);
-      computeSoldes();
-      computeSubtotal(_getFilteredTransactions());
+      try {
+        _patchRow(id);
+        computeSoldes();
+        computeSubtotal(_getFilteredTransactions());
+      } catch(e) {}
+      // L'échec était MUET : la coche revenait en arrière sans explication
+      _toast("❌ Pointage non enregistré :<br><small>" +
+             _esc(err && err.message ? err.message : String(err)) + "</small>", 6000);
     })
     .toggleCleared(id, desired);
 }
