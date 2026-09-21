@@ -1,5 +1,43 @@
 # WIMM? — Récapitulatif de session
 
+## 21/09/2026 — DÉPLOIEMENT SANS PC, DEPUIS UN IPHONE ✅
+
+**Déploiement @662 réussi** : le mode scénario est en production.
+Contenu vérifié : `Index.html` 17 246 lignes (17 245 + tampon de build), `Code.js` 3 525 lignes — conforme au commit `bb8612c`.
+
+### Le problème
+Le déploiement dépendait de `push.bat` sur le PC Windows. Sans ordinateur, impossible de publier — ça a bloqué deux fois dans la journée.
+
+### La solution : Google Cloud Shell
+Machine Linux gratuite accessible depuis Safari sur iPhone, rattachée au compte Google propriétaire du script. Node.js et clasp y tournent.
+
+**Deux scripts ajoutés au repo :**
+
+| Fichier | Rôle |
+|---|---|
+| `deploy.sh` | Clone le projet Apps Script **en ligne** (donc son vrai `appsscript.json`), remplace uniquement `Index.html` et `Code.js`, injecte le tampon de build, fait `clasp push`. Refuse de partir si `Html.txt` est tronqué ou si `Code cs.txt` n'a pas de `doGet()`. La publication reste une commande séparée. |
+| `auth.sh` | Échange OAuth **sans invite interactive**. |
+
+### Les deux obstacles rencontrés, et pourquoi
+1. **Impossible de coller dans le terminal Cloud Shell** au début → résolu, le collage fonctionne en réalité.
+2. **Cloud Shell coupe la session entière dès qu'on change d'application sur iPhone.** `clasp login --no-localhost` attend une réponse interactive → le processus meurt. **tmux ne suffit pas** : ce n'est pas le shell qui tombe, c'est la session.
+   → D'où `auth.sh` : il fait lui-même l'échange `code → jeton` via `curl`, écrit `~/.clasprc.json`, puis enchaîne `deploy.sh`. **Aucun processus n'a besoin de survivre.** Le secret client de clasp est public, lu dans le paquet npm installé.
+
+### Procédure pour la suite (le jeton est persistant)
+```
+cd ~/wimm && git pull && bash deploy.sh
+```
+puis coller la commande `clasp deploy` que le script affiche.
+
+Le dossier personnel de Cloud Shell est sur disque persistant : `~/wimm` et `~/.clasprc.json` survivent aux redémarrages.
+
+**Identifiants utiles**
+- Script ID : `1EGdEgeC_MHZu1aHGHBVq-rHfiT1h0pstH-ab0mHR29cEUFZCKO9pztLG` (lié au Sheet, donc invisible dans l'API Drive)
+- Déploiement production : `AKfycbxRBAggvRZgcG324NBYLa4ZBPvaf7fiVUTbYN5LMAQ6erVgN8CbA4u6cLERNuY9jSwm`
+- Un second déploiement `AKfycbz-7m5Y0EtgoewvvCU0K8V8heUXzybBJNDj1ZwADCk @HEAD` existe (version de test)
+
+
+
 ## 21/09/2026 — MODE SCÉNARIO (« fantôme »)
 
 **Demande** : « l'app fonctionne pareil mais sans écrasement, ce n'est que de la visualisation. Modifier les budgets, les revenus attendus, en ajouter. Mais pas de sauvegarder. Comme un fantôme de WIMM qui se crée et disparaît en sortant du mode. » Validation explicite ⇒ tout est enregistré.
