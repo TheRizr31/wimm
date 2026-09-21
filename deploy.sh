@@ -19,6 +19,10 @@ set -euo pipefail
 SCRIPT_ID="1EGdEgeC_MHZu1aHGHBVq-rHfiT1h0pstH-ab0mHR29cEUFZCKO9pztLG"
 DEPLOY_ID="AKfycbxRBAggvRZgcG324NBYLa4ZBPvaf7fiVUTbYN5LMAQ6erVgN8CbA4u6cLERNuY9jSwm"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Publication automatique : --publish, ou variable CI (GitHub Actions)
+PUBLISH=0
+case "${1:-}" in --publish|-p) PUBLISH=1;; esac
+[ "${CI:-}" = "true" ] && PUBLISH=1
 WORK="$HOME/wimm-deploy"
 
 say() { printf "\n\033[1;36m▶ %s\033[0m\n" "$1"; }
@@ -71,20 +75,21 @@ say "Envoi vers Apps Script"
 clasp push --force || die "Push échoué. Rien n'a été publié."
 
 # --- 5. Publication ------------------------------------------
-say "Déploiements existants"
-clasp deployments || true
-cat <<TXT
+if [ "$PUBLISH" = "1" ]; then
+  say "Publication du déploiement $DEPLOY_ID"
+  clasp deploy --deploymentId "$DEPLOY_ID" --description "${DEPLOY_DESC:-auto}" \
+    || die "Publication échouée. Le code est envoyé mais l'ancienne version reste en ligne."
+  say "En ligne. Recharge l'app (vide le cache Safari si besoin)."
+else
+  say "Déploiements existants"
+  clasp deployments || true
+  cat <<TXT
 
 Le code est envoyé, mais PAS ENCORE PUBLIÉ.
+Pour publier maintenant :
 
-L'identifiant attendu (celui du lanceur GitHub Pages et de ton push.bat) :
+    cd $WORK && clasp deploy --deploymentId $DEPLOY_ID --description "manuel"
 
-    $DEPLOY_ID
-
-Vérifie qu'il figure bien dans la liste ci-dessus, puis publie :
-
-    cd $WORK && clasp deploy --deploymentId $DEPLOY_ID --description "scenario"
-
-S'il n'y figure pas, prends celui de la liste et remplace-le dans la commande.
-Tant que cette commande n'est pas lancée, l'app en ligne reste inchangée.
+Ou relance en publiant directement :   bash deploy.sh --publish
 TXT
+fi
