@@ -3524,3 +3524,63 @@ function _getSettingsPayload() {
 function getSettings() {
   return _getSettingsPayload();
 }
+// ================= SCÉNARIOS (simulation épargne) =================
+// Un scénario ne modifie JAMAIS les données réelles : il est stocké à part,
+// dans la feuille AppMeta (déclarée dans SHEETS mais jusqu'ici inutilisée),
+// sous forme d'une seule ligne clé/valeur JSON par plan.
+// Le calcul, lui, est entièrement côté navigateur : rien à recalculer ici.
+
+function _scenarioKey(planId) { return "scenarios_" + planId; }
+
+function _appMetaFind(sheet, key) {
+  const data = sheet.getDataRange().getValues();
+  const h = data[0].map(String);
+  const kI = h.indexOf("key"), vI = h.indexOf("value"), uI = h.indexOf("updated_at");
+  if (kI < 0 || vI < 0) throw new Error("AppMeta : colonnes 'key' et 'value' introuvables");
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][kI]).trim() === key) return { row: i + 1, kI: kI, vI: vI, uI: uI, value: data[i][vI] };
+  }
+  return { row: 0, kI: kI, vI: vI, uI: uI, value: null, width: h.length };
+}
+
+function getScenarios() {
+  const sheet = getSheet(SHEETS.META);
+  if (!sheet) return [];
+  try {
+    const found = _appMetaFind(sheet, _scenarioKey(_getCurrentPlanId()));
+    if (!found.row) return [];
+    const parsed = JSON.parse(String(found.value || "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return []; // une sauvegarde illisible ne doit jamais bloquer le chargement
+  }
+}
+
+// jsonStr : chaîne JSON d'un tableau de scénarios. Remplace entièrement la liste.
+function saveScenarios(jsonStr) {
+  const sheet = getSheet(SHEETS.META);
+  if (!sheet) throw new Error("Feuille AppMeta introuvable");
+
+  let parsed;
+  try { parsed = JSON.parse(String(jsonStr || "[]")); }
+  catch (e) { throw new Error("Scénario illisible : " + e.message); }
+  if (!Array.isArray(parsed)) throw new Error("Format de scénario invalide (tableau attendu)");
+
+  const payload = JSON.stringify(parsed);
+  if (payload.length > 45000) throw new Error("Trop de scénarios enregistrés — supprimez-en avant d'en ajouter.");
+
+  const key   = _scenarioKey(_getCurrentPlanId());
+  const found = _appMetaFind(sheet, key);
+
+  if (found.row) {
+    sheet.getRange(found.row, found.vI + 1).setValue(payload);
+    if (found.uI >= 0) sheet.getRange(found.row, found.uI + 1).setValue(new Date());
+  } else {
+    const row = new Array(found.width).fill("");
+    row[found.kI] = key;
+    row[found.vI] = payload;
+    if (found.uI >= 0) row[found.uI] = new Date();
+    sheet.appendRow(row);
+  }
+  return parsed; // JSON pur : aucune Date renvoyée, sérialisation GAS sûre
+}

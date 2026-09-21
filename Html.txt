@@ -4647,6 +4647,75 @@
   .help-spot-inline { width: 26px !important; height: 26px !important; font-size: 12px !important; border-radius: 6px !important; }
 }
 
+    /* ============ SCÉNARIOS — simulation épargne ============ */
+    /* Classes préfixées scn- : aucune interférence avec l'existant.        */
+    /* Tout est contenu dans la modale, aucun impact sur la mise en page.   */
+    .scn-intro { font-size:14px; color:var(--text-muted,#666); line-height:1.5; margin:0 0 14px; }
+    .scn-block { margin-bottom:16px; }
+    .scn-block-title {
+      font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+      color:var(--text-muted,#888); margin:0 0 8px;
+    }
+    .scn-field { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .scn-field label { flex:1; font-size:15px; min-width:0; }
+    .scn-field label small { display:block; font-size:12px; color:var(--text-muted,#999); }
+    .scn-amount {
+      width:120px; flex:0 0 120px; text-align:right; padding:10px 12px !important;
+      font-size:16px !important; font-weight:600; border-radius:10px;
+      font-variant-numeric:tabular-nums;
+    }
+    .scn-line {
+      display:flex; align-items:center; gap:8px; padding:8px 0;
+      border-bottom:1px solid rgba(128,128,128,0.15);
+    }
+    .scn-line-name { flex:1; font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .scn-line-name small { display:block; font-size:12px; color:var(--text-muted,#999); }
+    .scn-line-del {
+      flex:0 0 auto; width:32px; height:32px; border-radius:8px; border:none;
+      background:rgba(220,38,38,0.12); color:#DC2626; font-size:16px; padding:0;
+      display:flex; align-items:center; justify-content:center; cursor:pointer;
+    }
+    .scn-add-row { display:flex; gap:8px; margin-top:10px; }
+    .scn-add-row select { flex:1; min-width:0; font-size:16px !important; padding:10px !important; border-radius:10px; }
+    .scn-add-row button {
+      flex:0 0 auto; padding:10px 16px; border-radius:10px; border:none;
+      background:var(--primary,#FBD72F); color:#1E1F24; font-weight:700; font-size:15px; cursor:pointer;
+    }
+    .scn-empty { font-size:14px; color:var(--text-muted,#999); font-style:italic; padding:8px 0; }
+    .scn-result {
+      border-radius:14px; padding:14px 16px; margin:4px 0 16px;
+      background:rgba(120,149,133,0.12); border:1px solid rgba(120,149,133,0.3);
+    }
+    .scn-result.scn-pos { background:rgba(16,185,129,0.12); border-color:rgba(16,185,129,0.35); }
+    .scn-result.scn-neg { background:rgba(220,38,38,0.10); border-color:rgba(220,38,38,0.30); }
+    .scn-result-main { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+    .scn-result-label { font-size:14px; font-weight:600; color:var(--text,#222); }
+    .scn-result-value { font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .scn-pos .scn-result-value { color:var(--green,#10B981); }
+    .scn-neg .scn-result-value { color:var(--red,#DC2626); }
+    .scn-result-sub { font-size:13px; color:var(--text-muted,#777); margin-top:6px; line-height:1.5; }
+    .scn-detail { font-size:13px; color:var(--text-muted,#888); margin-top:10px; line-height:1.7; }
+    .scn-detail-row { display:flex; justify-content:space-between; gap:10px; }
+    .scn-detail-row span:last-child { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .scn-saved { display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(128,128,128,0.15); }
+    .scn-saved-name { flex:1; font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .scn-saved button {
+      flex:0 0 auto; padding:7px 12px; border-radius:8px; border:none;
+      font-size:14px; font-weight:600; cursor:pointer;
+    }
+    .scn-load-btn { background:rgba(99,102,241,0.15); color:#6366F1; }
+    .scn-del-btn  { background:rgba(220,38,38,0.12); color:#DC2626; }
+    .scn-warn {
+      font-size:13px; line-height:1.5; padding:10px 12px; border-radius:10px;
+      background:rgba(251,191,36,0.14); color:#92400E; margin-bottom:12px;
+    }
+    /* Mobile : la modale doit rester utilisable sans zoom */
+    @media (max-width:1023px) {
+      .scn-amount { width:104px; flex:0 0 104px; font-size:16px !important; }
+      .scn-result-value { font-size:23px; }
+      .scn-line-name, .scn-field label { font-size:15px; }
+    }
+
     </style>
 
 </head>
@@ -4855,6 +4924,7 @@
           <button class="btn-depassement" id="btnToggleProgress" onclick="_toggleProgressBars()" title="Afficher/masquer les barres de progression">📊</button>
           <button class="btn-copy-prev" onclick="copyFromPrevious()" title="Reporter les montants budgétisés du mois précédent">📋 <span class="btn-copy-txt">Report budget M-1</span></button>
           <button class="action-history-btn" onclick="_openActionHistory()" title="Historique des actions">🕐 <span class="btn-fold-txt">Historique</span></button>
+          <button class="btn-fold" onclick="_scnOpen()" title="Simuler : combien puis-je épargner ?">🎬 <span class="btn-fold-txt">Scénario</span></button>
           <button class="btn-danger-sm" onclick="openResetBudgetModal()">🗑 RAZ</button>
           <button class="btn-budget-add" onclick="openAddModal()" title="Ajouter une transaction">＋<span class="btn-budget-add-txt"> Ajouter transaction</span></button>
           <button class="btn-fold help-spot-btn" onclick="_tourStart('budget')" title="Visite guidée de cet onglet">❓</button>
@@ -5920,6 +5990,62 @@
     <div class="modal-buttons">
       <button class="btn-cancel" onclick="closeResetBudgetModal()">Annuler</button>
       <button class="btn-delete" onclick="confirmResetBudget()">Confirmer RAZ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCÉNARIOS — simulation épargne ============ -->
+<!-- Lecture seule sur les données réelles : cette modale ne modifie       -->
+<!-- aucune transaction ni aucun budget. Seule la liste des scénarios      -->
+<!-- enregistrés est écrite, et uniquement sur clic explicite.             -->
+<div id="scenarioModal" class="modal-overlay">
+  <div class="modal modal-large">
+    <h3>🎬 Scénario — combien puis-je épargner ?</h3>
+    <div style="overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch;">
+
+      <p class="scn-intro" id="scnIntro">—</p>
+
+      <div class="scn-result" id="scnResult">
+        <div class="scn-result-main">
+          <span class="scn-result-label">Épargne possible</span>
+          <span class="scn-result-value" id="scnResultValue">—</span>
+        </div>
+        <div class="scn-result-sub" id="scnResultSub">—</div>
+        <div class="scn-detail" id="scnDetail"></div>
+      </div>
+
+      <div class="scn-block">
+        <div class="scn-block-title">Revenus du mois</div>
+        <div class="scn-field">
+          <label>Revenu mensuel<small id="scnRevenuRef">—</small></label>
+          <input type="number" inputmode="decimal" step="0.01" class="scn-amount" id="scnRevenu"
+                 oninput="_scnRecompute()">
+        </div>
+      </div>
+
+      <div class="scn-block">
+        <div class="scn-block-title">Budgets modifiés</div>
+        <div id="scnLines"></div>
+        <div class="scn-add-row">
+          <select id="scnCatPicker"></select>
+          <button type="button" onclick="_scnAddLine()">Ajouter</button>
+        </div>
+      </div>
+
+      <div class="scn-block">
+        <div class="scn-block-title">Scénarios enregistrés</div>
+        <div id="scnSavedList"></div>
+        <div class="scn-add-row">
+          <input type="text" id="scnName" placeholder="Nom du scénario" maxlength="40"
+                 style="flex:1;min-width:0;font-size:16px !important;padding:10px !important;border-radius:10px;">
+          <button type="button" onclick="_scnSave()">💾 Enregistrer</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-buttons" style="margin-top:14px;">
+      <button class="btn-cancel" onclick="_scnClose()">Fermer</button>
+      <button class="btn-cancel" onclick="_scnReset()">↺ Repartir du réel</button>
     </div>
   </div>
 </div>
@@ -16656,6 +16782,319 @@ function _confirmDeleteProject() {
     _runSplashAnimation();
   }
 })();
+// ============ SCÉNARIOS — simulation épargne ============
+// Objectif : répondre à « si mes revenus changeaient, combien pourrais-je
+// épargner en plus ? » SANS dupliquer le plan et SANS toucher aux données.
+//
+// Tout le calcul est fait ici, côté navigateur, à partir des données déjà
+// chargées (allTransactions, window._lastBudgetData). Aucun appel serveur,
+// donc réponse instantanée. Le serveur n'est sollicité que pour enregistrer
+// ou relire la liste des scénarios, sur clic explicite de l'utilisateur.
+//
+// Convention de signe WIMM : un revenu est un montant NÉGATIF en base.
+// On applique donc -amount pour obtenir la valeur réelle, comme partout
+// ailleurs (cf. updateProjection).
+
+window._scnState = null;
+window._scnSaved = null;   // null = pas encore chargé depuis le serveur
+
+function _scnNum(v) {
+  if (v === null || v === undefined || v === "") return 0;
+  const n = Number(String(v).replace(/\s/g, "").replace(",", "."));
+  return isFinite(n) ? n : 0;
+}
+
+// Construit l'état de référence : ce que disent réellement les données.
+function _scnBuildBase(period) {
+  const assignId = String(_assignCatId || "CAT001");
+  const savId    = String(_savingsCatId || "");
+  const savIsSet = savId && savId !== "CAT001";
+
+  // Revenu du mois = transactions de la catégorie « À assigner » sur la période.
+  // C'est exactement la définition retenue par le backend (totalEntreesJusquaMois).
+  let revenu = 0;
+  (window.allTransactions || []).forEach(function (t) {
+    if (String(t.category_id) !== assignId) return;
+    if (String(t.period || "") !== period) return;
+    revenu += -(Number(t.amount) || 0);
+  });
+
+  // Lignes budgétées du mois, hors « À assigner » (déjà exclue côté serveur)
+  // et hors catégorie d'épargne — cette dernière est le RÉSULTAT, pas une entrée.
+  const lines = [];
+  let epargne = 0, epargneCatName = "";
+  (window._lastBudgetData || []).forEach(function (b) {
+    (b.categories || []).forEach(function (c) {
+      const cid = String(c.category_id);
+      if (cid === assignId) return;
+      const bud = Number(c.budgeted) || 0;
+      if (savIsSet && cid === savId) {
+        epargne += bud;
+        epargneCatName = c.category_name || "";
+        return;
+      }
+      lines.push({
+        id: cid,
+        name: c.category_name || cid,
+        bucket: b.bucket_name || "",
+        budgeted: bud
+      });
+    });
+  });
+  lines.sort(function (a, b) { return (b.budgeted - a.budgeted) || a.name.localeCompare(b.name); });
+
+  return { revenu: revenu, epargne: epargne, epargneCatName: epargneCatName, savIsSet: savIsSet, lines: lines };
+}
+
+function _scnOpen() {
+  const period = (document.getElementById("periodSelect") || {}).value || "";
+  if (!period) { showInfoModal("Aucune période sélectionnée."); return; }
+  if (!window._lastBudgetData) {
+    showInfoModal("Les budgets ne sont pas encore chargés. Ouvrez l'onglet Budget puis réessayez.");
+    return;
+  }
+
+  const base = _scnBuildBase(period);
+  window._scnState = { period: period, base: base, revenu: base.revenu, overrides: {} };
+
+  document.getElementById("scnRevenu").value = base.revenu ? base.revenu.toFixed(2) : "";
+  document.getElementById("scnRevenuRef").textContent =
+    "Réel sur " + period + " : " + formatEuro(base.revenu);
+  document.getElementById("scnName").value = "";
+
+  _scnRenderLines();
+  _scnRenderPicker();
+  _scnRecompute();
+  document.getElementById("scenarioModal").classList.add("active");
+
+  // Charger les scénarios enregistrés (une seule fois par session)
+  if (window._scnSaved === null) {
+    document.getElementById("scnSavedList").innerHTML =
+      '<div class="scn-empty">Chargement…</div>';
+    google.script.run
+      .withSuccessHandler(function (list) {
+        window._scnSaved = Array.isArray(list) ? list : [];
+        _scnRenderSaved();
+      })
+      .withFailureHandler(function () {
+        window._scnSaved = [];
+        document.getElementById("scnSavedList").innerHTML =
+          '<div class="scn-empty">Impossible de charger les scénarios enregistrés.</div>';
+      })
+      .getScenarios();
+  } else {
+    _scnRenderSaved();
+  }
+}
+
+function _scnClose() {
+  document.getElementById("scenarioModal").classList.remove("active");
+}
+
+function _scnReset() {
+  const s = window._scnState;
+  if (!s) return;
+  s.revenu = s.base.revenu;
+  s.overrides = {};
+  document.getElementById("scnRevenu").value = s.base.revenu ? s.base.revenu.toFixed(2) : "";
+  document.getElementById("scnName").value = "";
+  _scnRenderLines();
+  _scnRenderPicker();
+  _scnRecompute();
+}
+
+function _scnRenderLines() {
+  const s = window._scnState;
+  const host = document.getElementById("scnLines");
+  if (!s) { host.innerHTML = ""; return; }
+  const ids = Object.keys(s.overrides);
+  if (!ids.length) {
+    host.innerHTML = '<div class="scn-empty">Aucune ligne modifiée — tous les budgets restent ceux du mois.</div>';
+    return;
+  }
+  host.innerHTML = ids.map(function (cid) {
+    const line = s.base.lines.find(function (l) { return l.id === cid; });
+    if (!line) return "";
+    return '<div class="scn-line">' +
+      '<span class="scn-line-name">' + _esc(line.name) +
+        '<small>réel : ' + formatEuro(line.budgeted) + '</small></span>' +
+      '<input type="number" inputmode="decimal" step="0.01" class="scn-amount" ' +
+        'value="' + _scnNum(s.overrides[cid]).toFixed(2) + '" ' +
+        'oninput="_scnSetOverride(\'' + cid + '\', this.value)">' +
+      '<button type="button" class="scn-line-del" title="Retirer cette ligne" ' +
+        'onclick="_scnDelLine(\'' + cid + '\')">×</button>' +
+      '</div>';
+  }).join("");
+}
+
+function _scnRenderPicker() {
+  const s = window._scnState;
+  const sel = document.getElementById("scnCatPicker");
+  if (!s) { sel.innerHTML = ""; return; }
+  const avail = s.base.lines.filter(function (l) { return !(l.id in s.overrides); });
+  if (!avail.length) {
+    sel.innerHTML = '<option value="">Toutes les lignes sont déjà modifiées</option>';
+    return;
+  }
+  sel.innerHTML = '<option value="">Choisir une catégorie…</option>' +
+    avail.map(function (l) {
+      return '<option value="' + _esc(l.id) + '">' + _esc(l.name) +
+             " — " + formatEuro(l.budgeted) + "</option>";
+    }).join("");
+}
+
+function _scnAddLine() {
+  const s = window._scnState;
+  const sel = document.getElementById("scnCatPicker");
+  if (!s || !sel.value) return;
+  const line = s.base.lines.find(function (l) { return l.id === sel.value; });
+  if (!line) return;
+  s.overrides[line.id] = line.budgeted;   // on part du montant réel
+  _scnRenderLines();
+  _scnRenderPicker();
+  _scnRecompute();
+}
+
+function _scnDelLine(cid) {
+  const s = window._scnState;
+  if (!s) return;
+  delete s.overrides[cid];
+  _scnRenderLines();
+  _scnRenderPicker();
+  _scnRecompute();
+}
+
+function _scnSetOverride(cid, val) {
+  const s = window._scnState;
+  if (!s) return;
+  s.overrides[cid] = _scnNum(val);
+  _scnRecompute();   // on ne re-rend pas la liste : cela ferait perdre le focus
+}
+
+function _scnRecompute() {
+  const s = window._scnState;
+  if (!s) return;
+  s.revenu = _scnNum(document.getElementById("scnRevenu").value);
+
+  // Budgets hors épargne, avec les remplacements choisis
+  let budgets = 0;
+  s.base.lines.forEach(function (l) {
+    budgets += (l.id in s.overrides) ? _scnNum(s.overrides[l.id]) : l.budgeted;
+  });
+
+  // Ce qui reste une fois tout budgété part en épargne (règle retenue :
+  // l'argent non assigné est de l'épargne potentielle).
+  const possible = Math.round((s.revenu - budgets) * 100) / 100;
+  const delta    = Math.round((possible - s.base.epargne) * 100) / 100;
+
+  const card = document.getElementById("scnResult");
+  card.className = "scn-result " + (delta > 0.005 ? "scn-pos" : (delta < -0.005 ? "scn-neg" : ""));
+  document.getElementById("scnResultValue").textContent = formatEuro(possible);
+
+  let sub;
+  if (!s.base.savIsSet) {
+    sub = "Aucune catégorie d'épargne n'est définie dans les Réglages — impossible de comparer à ton épargne actuelle.";
+  } else if (Math.abs(delta) < 0.005) {
+    sub = "Identique à ton épargne actuelle (" + formatEuro(s.base.epargne) + ").";
+  } else if (delta > 0) {
+    sub = "Soit " + formatEuro(delta) + " de plus que ton épargne actuelle (" +
+          formatEuro(s.base.epargne) + " sur « " + _esc(s.base.epargneCatName) + " »).";
+  } else {
+    sub = "Soit " + formatEuro(Math.abs(delta)) + " de MOINS que ton épargne actuelle (" +
+          formatEuro(s.base.epargne) + ").";
+  }
+  document.getElementById("scnResultSub").innerHTML = sub;
+
+  const nbMod = Object.keys(s.overrides).length;
+  document.getElementById("scnDetail").innerHTML =
+    '<div class="scn-detail-row"><span>Revenus</span><span>' + formatEuro(s.revenu) + "</span></div>" +
+    '<div class="scn-detail-row"><span>− Budgets hors épargne' +
+      (nbMod ? " (" + nbMod + " ligne" + (nbMod > 1 ? "s" : "") + " modifiée" + (nbMod > 1 ? "s" : "") + ")" : "") +
+      "</span><span>" + formatEuro(budgets) + "</span></div>";
+
+  document.getElementById("scnIntro").textContent =
+    "Période " + s.period + ". Les montants ci-dessous sont une simulation : " +
+    "rien n'est modifié dans tes budgets ni dans tes transactions.";
+}
+
+// ---- Enregistrement (explicite uniquement) ----
+
+function _scnRenderSaved() {
+  const host = document.getElementById("scnSavedList");
+  const list = window._scnSaved || [];
+  if (!list.length) {
+    host.innerHTML = '<div class="scn-empty">Aucun scénario enregistré.</div>';
+    return;
+  }
+  host.innerHTML = list.map(function (sc, i) {
+    return '<div class="scn-saved">' +
+      '<span class="scn-saved-name">' + _esc(sc.name || "Sans nom") + "</span>" +
+      '<button class="scn-load-btn" onclick="_scnLoad(' + i + ')">Charger</button>' +
+      '<button class="scn-del-btn" onclick="_scnDelSaved(' + i + ')">×</button>' +
+      "</div>";
+  }).join("");
+}
+
+function _scnLoad(i) {
+  const s  = window._scnState;
+  const sc = (window._scnSaved || [])[i];
+  if (!s || !sc) return;
+  s.revenu    = _scnNum(sc.revenu);
+  s.overrides = {};
+  // On ne recharge que les catégories qui existent encore dans ce budget
+  Object.keys(sc.overrides || {}).forEach(function (cid) {
+    if (s.base.lines.some(function (l) { return l.id === cid; })) {
+      s.overrides[cid] = _scnNum(sc.overrides[cid]);
+    }
+  });
+  document.getElementById("scnRevenu").value = s.revenu ? s.revenu.toFixed(2) : "";
+  document.getElementById("scnName").value   = sc.name || "";
+  _scnRenderLines();
+  _scnRenderPicker();
+  _scnRecompute();
+}
+
+function _scnPersist(list, okMsg) {
+  google.script.run
+    .withSuccessHandler(function (saved) {
+      window._scnSaved = Array.isArray(saved) ? saved : list;
+      _scnRenderSaved();
+      if (okMsg) showInfoModal(okMsg);
+    })
+    .withFailureHandler(function (err) {
+      showInfoModal("Enregistrement impossible : " +
+        _esc((err && err.message) ? err.message : "erreur inconnue"));
+    })
+    .saveScenarios(JSON.stringify(list));
+}
+
+function _scnSave() {
+  const s = window._scnState;
+  if (!s) return;
+  const name = (document.getElementById("scnName").value || "").trim();
+  if (!name) { showInfoModal("Donne un nom au scénario avant de l'enregistrer."); return; }
+
+  const entry = { name: name, revenu: s.revenu, overrides: {} };
+  Object.keys(s.overrides).forEach(function (cid) { entry.overrides[cid] = _scnNum(s.overrides[cid]); });
+
+  const list = (window._scnSaved || []).slice();
+  const at = list.findIndex(function (x) { return (x.name || "").toLowerCase() === name.toLowerCase(); });
+  if (at >= 0) list[at] = entry; else list.push(entry);
+
+  _scnPersist(list, "Scénario « " + _esc(name) + " » enregistré.");
+}
+
+function _scnDelSaved(i) {
+  const list = (window._scnSaved || []).slice();
+  if (i < 0 || i >= list.length) return;
+  list.splice(i, 1);
+  _scnPersist(list, null);
+}
+
+document.getElementById("scenarioModal").addEventListener("click", function (e) {
+  if (e.target === this) _scnClose();
+});
+
 </script>
 
 
