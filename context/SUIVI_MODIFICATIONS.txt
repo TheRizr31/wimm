@@ -1,0 +1,3123 @@
+﻿================================================================================
+  WIMM? — Where's My Money? | SUIVI DES ÉCHANGES & MODIFICATIONS
+================================================================================
+Application : Budget personnel (YNAB-like)
+Stack       : Google Apps Script (GAS) + Google Sheets + HTML/JS vanilla
+Fichiers    : index.Html.txt (~10 850 lignes) | Code_GS.txt (~2 680 lignes)
+Fichiers WIP: index_TEST.Html.txt            | Code_GS_TEST.txt
+RÈGLE       : Les fichiers originaux ne sont JAMAIS modifiés.
+              Toutes les modifications s'appliquent uniquement aux fichiers _TEST.
+Spec        : Support/WIMM_Spec_Reconstruction.docx
+Démarré le  : 2026-03-16
+================================================================================
+
+
+--------------------------------------------------------------------------------
+SESSION 1 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  - Lecture de la spécification complète WIMM_Spec_Reconstruction.docx
+  - Prise en main du projet : architecture, structure des feuilles Sheets,
+    logiques critiques (signes montants, _safeReturnTx, carry-forward, etc.)
+  - Mise en place du dossier de travail et de ce fichier de suivi
+
+Fichiers fournis :
+  - index.Html.txt    → Frontend complet (HTML + CSS + JS, fichier unique)
+  - Code_GS.txt       → Backend Google Apps Script
+  - Support/WIMM_Spec_Reconstruction.docx → Spécification complète
+  - Support/ChatGPT Image 12 mars 2026, 13_57_21.png → Visuel de référence
+
+Modifications apportées :
+  (aucune modification de code pour l'instant)
+
+Notes / Points d'attention relevés :
+  - Convention CRITIQUE : val = -amount pour affichage. Ne jamais afficher
+    amount directement (sauf _totalSavings = somme directe).
+  - _safeReturnTx() obligatoire sur tous les return GAS renvoyant des TX.
+  - plan_id obligatoire sur chaque mutation (TX, catégorie, groupe, tiers...).
+  - Roadmap documentée : Bottom sheets, layout mobile, bouton Économiser,
+    notes catégories, report budget mensuel, feedback haptique iOS.
+  - Bug connu #1 : crash startupTab → ajouter try/catch dans saveStartupTab.
+  - Bug connu #2 : reorderCategories → vérifier format payload.
+
+--------------------------------------------------------------------------------
+SESSION 2 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Amélioration de l'expérience mobile (smartphone friendly) sur 3 onglets.
+  Sans toucher à l'affichage desktop (min-width: 1024px intact).
+  Fichier modifié : index_TEST.Html.txt uniquement.
+
+Modifications apportées :
+
+  [ONGLET SAISIE] — index_TEST.Html.txt
+  Bloc @media (max-width: 1023px) — lignes ~1270 et ~2819
+  - Section : gap 0→12px, padding-top ajouté (12px) pour respiration
+  - .group cards : padding 14px→18px
+  - Montant (#simpleAmount) : font-size 36px→44px
+  - Suffixe € : font-size 26px→30px
+  - Catégorie (#simpleCategory) : min-height 50→62px, padding 14px→18px, font 16→17px
+  - Date input : min-height 48→58px, padding amélioré
+  - Bénéficiaire row : min-height 48→58px
+  - Boutons action : padding 15px→20px, font 16→18px, min-height 52→66px
+
+  [ONGLET BUDGET] — index_TEST.Html.txt
+  - .cat-row td : padding 9px→14px, font-size 13px→15px
+  - .budget-input : width 68px→100%, répartition colonnes 36/26/20/18%
+
+  [ONGLET BANQUE] — index_TEST.Html.txt
+  - .tx-table td : padding 10px→15px, td-cat 14→16px, td-amt 15→18px
+  - .solde-value : font-size 14→17px
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+
+--------------------------------------------------------------------------------
+SESSION 3 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Retour utilisateur session 2 : éléments encore trop petits, layout Banque cassé
+  (catégories sur les dates), bénéficiaire absent. Objectif : chaque champ sur
+  sa propre ligne, tout beaucoup plus grand, layout carte pour Banque.
+
+Modifications apportées :
+
+  [ONGLET SAISIE] — index_TEST.Html.txt
+  - .saisie-row-top : flex-direction row → COLONNE (date ET bénéf chacun sur sa ligne)
+  - Date input : min-height 58→72px, font 16→19px, padding 20px
+  - Bénéficiaire : min-height 58→72px
+  - #simpleAmount : font 44→52px, letter-spacing -2px
+  - .input-euro-wrap : min-height 86px, padding 18px 20px
+  - € suffix : 30→34px
+  - #simpleCategory : min-height 62→72px, font 17→19px, padding 20px
+  - Description : min-height 58→72px, font 16→18px
+  - Boutons action : min-height 66→72px, font 18→20px, padding 22px
+  - Bouton "pointé" : min-height 52→62px, font 15→16px
+
+  [ONGLET BUDGET] — index_TEST.Html.txt
+  - .cat-row td : padding 14→20px, font 15→17px
+  - .bucket-header td : padding 11→16px, font 14→16px
+  - .budget-input : font 15→17px, padding 9→12px
+  - thead th : font 12→13px, padding 11→14px
+
+  [ONGLET BANQUE] — index_TEST.Html.txt — REDESIGN COMPLET EN LAYOUT CARTE
+  Suppression table-layout: fixed (source du bug cat sur date).
+  Chaque transaction rendue comme une carte flex :
+    Ligne 1 : [☐ checkbox] [date]           [montant 21px] [⋮]
+    Ligne 2 :     Catégorie (19px bold)
+    Ligne 3 :     👤 Bénéficiaire (14px, réactivé)
+  - thead masqué (display: none)
+  - td-debtor RÉACTIVÉ (display: flex)
+  - td-desc reste masquée
+  - min-height par carte : 80px (~5 cartes visibles à l'écran)
+  - Bordure latérale verte conservée pour les transactions pointées (row-cleared)
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Toutes les modifications dans index_TEST.Html.txt uniquement
+
+--------------------------------------------------------------------------------
+SESSION 4 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Retour session 3 : s'approche mais tout encore plus grand, marges cartes
+  Saisie, top Budget et top Banque plus gros, fix décalage checkbox Banque,
+  polices globales plus grandes.
+
+Modifications apportées :
+
+  [SAISIE] — index_TEST.Html.txt
+  - Section : padding 12px→16px sur les côtés (effet carte visible)
+  - .group cards : padding 20→24px, border-radius 14→16px
+  - Segment buttons : padding 15→17px, font 17→18px
+  - #simpleAmount : 52→56px
+  - € suffix : 34→36px, wrap min-height 86→96px
+  - #simpleCategory : 19→20px, min-height 72→76px
+  - Date/Bénéf/Description : 19→20px, min-height 72→76px
+  - Boutons action : 20→21px, min-height 72→76px
+  - Bouton pointé : 16→17px, min-height 62→66px
+
+  [BUDGET - partie haute] — index_TEST.Html.txt
+  - budget-sticky-top : padding augmenté, gap 10px
+  - Sélecteur période : font 16→18px, min-height 54px, padding 14px
+  - btn-icon (‹/›) : 40→46px
+  - disponible-card : padding 14→18px, border-radius 16px
+  - disponible-card-value : 28→36px
+  - disponible-card-label : 11→13px
+  - Projection card : titres et valeurs augmentés
+  - Boutons barre actions : font 14→16px, padding 8→12px, min-height 48px
+  - btn-budget-add : 40→48px
+
+  [BUDGET - tableau] — index_TEST.Html.txt
+  - .cat-row : padding 20→22px, font 17→18px
+  - .bucket-header : padding 16→18px, font 16→17px
+  - thead th : font 12→13px, padding augmenté
+
+  [BANQUE - partie haute] — index_TEST.Html.txt
+  - history-sticky-top : padding et gap augmentés
+  - .solde-card : padding 12→16px
+  - .solde-value : 17→20px, .solde-label : 11→13px
+  - Filtres (select) : font 15→17px, min-height 50px
+  - filter-uncleared label : 14→17px
+  - #reconcileBtn : 11→15px, min-height 50px
+
+  [BANQUE - cartes] — index_TEST.Html.txt
+  - td-check : 28→36px (plus grosse zone)
+  - td-cat / td-debtor : padding-left 28→36px (aligne sur checkbox, plus de chevauchement)
+  - td-cat : font 19→21px
+  - td-debtor : font 14→16px
+  - td-amt : font 21→23px
+  - td-date : font 13→15px
+  - icon-cleared : 28→30px
+
+  [GLOBAL MOBILE] — index_TEST.Html.txt
+  - Base inputs/selects/textarea : 16→18px
+
+--------------------------------------------------------------------------------
+SESSION 5 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Retour session 4 + screenshots YNAB iOS partagés par l'utilisateur comme
+  référence visuelle. Objectif : layout Saisie style application native YNAB :
+  montant hero centré et isolé (fond transparent), puis une carte unifiée
+  fusionnant les deux groupes (catégorie/txClearedBtn + date/bénéf/description),
+  avec des lignes séparatrices internes entre chaque champ.
+
+Modifications apportées :
+
+  [ONGLET SAISIE] — index_TEST.Html.txt — BLOCK 1 (~ligne 1270)
+  - #transactionsSection : gap 12px → 0 (groupes collés pour la carte unifiée)
+  - .segment : ajout margin-bottom: 16px (remplace le gap supprimé)
+  - .form-actions : ajout margin-top: 20px
+  - .simple-form-row : gap → 0
+  - .simple-form-row .input-euro-wrap : background transparent, border-radius 0,
+    justify-content center, padding 28px 24px 24px, border-bottom séparateur
+  - #simpleAmount : 56px → 64px, text-align right → center, width 100% → auto,
+    flex: none (détache de input-euro-wrap flex-grow)
+  - .input-euro-suffix : 36px → 32px, align-self flex-end, margin-bottom 6px
+    (effet € légèrement en bas à droite du montant, style YNAB)
+  - #simpleCategory : border-radius → 0, border-bottom séparateur, bg transparent,
+    font 20px → 19px, padding et min-height légèrement réduits
+  - #simpleFormBlock .group : carte unifiée HAUT : border-radius 16px 16px 0 0,
+    padding/gap → 0, overflow: hidden
+  - #transactionsSection > .group:first-of-type : carte unifiée BAS : border-radius
+    0 0 16px 16px, padding/gap → 0, overflow: hidden
+  - .saisie-row-top : gap 10px → 0 (séparateurs border-bottom remplacent le gap)
+  - .saisie-row-top input[type=date] : border-radius 0, bg transparent,
+    border-bottom séparateur, font/min-height légèrement réduits
+  - .saisie-row-top .debtor-input-row : suppression border existant,
+    ajout border-bottom séparateur, border-radius 0, bg transparent
+  - #description : border-radius 0, bg transparent
+  - #txClearedBtn : border → none, border-bottom séparateur, border-radius 0,
+    bg transparent, min-height 58px
+  - Boutons Ventiler/Effacer : ajout padding + border-bottom séparateur via :has()
+
+  [ONGLET SAISIE] — index_TEST.Html.txt — BLOCK 2 (~ligne 2875, avec !important)
+  - Suppression règle générique #transactionsSection .group (remplacée par règles
+    spécifiques #simpleFormBlock .group et .group:first-of-type)
+  - Ajout règles !important pour toutes les propriétés ci-dessus
+  - .segment : ajout margin-bottom: 16px !important
+  - .form-actions : ajout margin-top: 20px !important
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Effet visuel recherché : montant centré ~64px sur fond nu, puis carte unique
+    avec séparations internes entre chaque champ (style YNAB / app native iOS)
+  - :has() utilisé pour Ventiler/Effacer — compatible Safari 15.4+ / Chrome 105+
+
+--------------------------------------------------------------------------------
+SESSION 6 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Retour sur le rendu réel (screenshot partagé) : layout cassé — les bugs CSS
+  identifiés sont (1) sélecteur :first-of-type cassé (ne matchait rien), (2)
+  border-radius inversés (haut/bas), (3) date input 140px de haut (flex:0 0 140px
+  inline en contexte colonne), (4) #simpleAmount avec fond dark (pas de background
+  transparent dans bloc 2), (5) #txClearedBtn font-size:13px inline (zoom iOS).
+  De plus : demande générale d'augmentation de toutes les polices et icônes.
+
+Modifications apportées :
+
+  [BLOC 1 — ~ligne 1270] — Correction sélecteurs et border-radius
+  - #transactionsSection > .group:first-of-type → .group:not(#queueSection)
+    (fix: :first-of-type matchait rien car #txSuccess est le 1er div enfant)
+  - Swap border-radius : date-group = 16px 16px 0 0 (TOP)
+                         simpleFormBlock.group = 0 0 16px 16px (BOTTOM)
+  - Ajout margin:0 sur les deux groupes
+  - #txClearedBtn : font-size 16px→20px !important, min-height 58→68px !important
+    (override inline style:font-size:13px qui causait le zoom iOS)
+
+  [BLOC 2 — ~ligne 2875] — Corrections et augmentations polices
+  - Header : app-title 17→21px, btn-settings-open 38→46px (icône 22→28px)
+  - Nav bar : labels 10→12px, icônes 22→26px (svg aussi)
+  - Segment (Dépense/Revenu/Attendu) : buttons padding 17→20px, font 18→21px
+  - Correction sélecteurs groupes (même fix que bloc 1, avec !important)
+  - #simpleAmount : ajout background:transparent + border:none !important
+    (le fond dark venait du input lui-même, pas du wrap)
+  - Date input : flex:0 0 auto !important (annule l'inline flex:0 0 140px qui
+    rendait l'input 140px de HAUT en contexte flex-column), ajout width:100%,
+    min-width:0, box-sizing:border-box, suppression min-height fixe
+    → police 19→21px
+  - #debtorInput : font-size 21px !important (anti-zoom iOS)
+  - #description : font 19→21px, padding 20→22px, min-height 68→74px
+  - #simpleCategory : font 19→21px, padding 20→22px, min-height 68→74px
+  - #txClearedBtn : ajout règle explicite bloc 2 (override inline style 13px)
+  - Ventiler/Effacer : font 20px, padding 18px 20px, min-height 68px
+  - Boutons File d'attente / Direct : font 20→22px, padding 22→24px, min-height 70→76px
+  - Global inputs/select/textarea : 18→20px (pas de zoom sur aucun champ)
+  - File d'attente (queueSection) : queue-item 16px padding, cat 19px, amt 20px,
+    meta 15px, btn-queue-submit 20px
+
+  [POST-SESSION 6 — correctif zoom iOS]
+  - Screenshot partagé : iOS "zoome" (pane horizontalement) quand Description est focalisé
+  - Cause : .simple-form-row n'avait PAS flex-direction:column-reverse en !important
+    → la règle desktop (row) prenait le dessus → montant 64px + catégorie côte à
+    côte → débordement horizontal → iOS pane à la mise au focus du champ Description
+  - Fix bloc 1 : fusion doublon .simple-form-row + ajout width:100%; overflow:hidden
+  - Fix bloc 2 : ajout .simple-form-row { flex-direction:column-reverse !important;
+    width:100% !important; overflow:hidden !important; }
+  - Fix .input-euro-wrap : ajout display:flex !important; flex-direction:row !important;
+    width:100% !important; box-sizing:border-box !important; overflow:hidden !important
+  - Fix #simpleAmount : ajout max-width:calc(100vw - 120px) !important; min-width:0
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Bug racine :first-of-type : en CSS, .group:first-of-type vérifie si l'élément
+    est le PREMIER de son type (div) parmi ses frères. Comme #txSuccess est le
+    premier div, aucun .group ne matchait. Fix : :not(#queueSection) plus fiable.
+  - Bug racine zoom iOS : débordement horizontal (overflow-x) = iOS pane le viewport
+    au focus d'un input → ressemble à un zoom. Fix : flex-direction + overflow hidden.
+
+--------------------------------------------------------------------------------
+SESSION 7 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Screenshots mode simple + ventilation partagés. Retours :
+  - Splash : logo/texte/aura trop petits
+  - Nav : icônes trop petites
+  - Drawer : tout trop petit
+  - Saisie : bordures des cartes invisibles (thème zen = fond clair)
+  - Bénéficiaire et Catégorie disproportionnés vs montant (trop petits)
+  - Mode ventilation : tous éléments trop petits
+
+Modifications apportées :
+
+  [BLOC 2 — Splash screen]
+  - splash-logo : 300px base → 200px mobile (affiché plein écran)
+  - splash-logo-wrap : 440px → 280px
+  - splash-abbrev : 38px → 52px
+  - splash-tagline : 12px → 15px
+  - splash-loader : 2px → 5px, 120px → 180px
+
+  [BLOC 2 — Barre de navigation]
+  - Icônes : 26px → 28px (via nav-icon sur la règle GROUPS)
+  - Labels : 12px maintenu
+
+  [BLOC 2 — Drawer]
+  - drawer-logo-img : 80px (réduit pour compacité mobile)
+  - drawer-brand-abbrev : 25px → 32px
+  - drawer-brand-name : 13px → 16px
+  - drawer-solde-val : 22px → 28px
+  - drawer-section-label : padding et font 13px
+  - drawer-menu-item : padding 12px → 18px, min-height 72px
+  - drawer-menu-icon : 25px → 32px (+ svg 32px)
+  - drawer-menu-title : 16px → 19px bold
+  - drawer-menu-sub : 12px → 14px
+  - drawer-menu-arrow : font 24px
+  - planDrawerSelect : 13px → 17px, min-height 52px
+
+  [BLOC 2 — Saisie : bordures cartes]
+  - .group { border: 1px solid rgba(128,128,128,0.18) } (tous thèmes)
+  - cartes unifiées saisie : border 0.22 + box-shadow 0 2px 12px
+
+  [BLOC 2 — Saisie : Bénéficiaire + Catégorie]
+  - #simpleCategory : 21px → 24px, padding 22→26px, min-height 74→90px
+  - #debtorInput : 21px → 24px
+  - .debtor-input-row : min-height 74→90px
+  - .debtor-chevron-btn : 24px, padding 14px
+
+  [BLOC 2 — Mode ventilation]
+  - split-mode-label : 21px bold
+  - btn-mini : 17px, min-height 48px
+  - #totalAmount : 28px bold, min-height 80px
+  - reste-badge : 18px
+  - split-line : min-height 72px, padding 8px 20px
+  - split-line select/input : 20px, min-height 68px
+  - btn-remove-split : 44px, font 22px
+  - + Catégorie button : 20px, min-height 72px
+
+--------------------------------------------------------------------------------
+SESSION 8 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Retour : "Pas de différence sur le logo" (erreur session 7 : logo rétréci à
+  200px au lieu d'être agrandi) + "moins de zoom" ✓ + "grossir tout Saisie
+  proportionnellement de 15%"
+
+Modifications apportées :
+
+  [BLOC 2 — Splash : correction]
+  - Suppression override taille logo (300px base conservé, OK sur mobile)
+  - splash-abbrev : 52px → 56px
+  - splash-tagline : 15px → 16px
+  - splash-loader : 180px → 200px, 5px → 6px
+
+  [BLOC 2 — Saisie : +15% proportionnel sur tout]
+  - Segment buttons : font 21→24px, padding 20→23px
+  - input-euro-wrap : padding 28/24/24→32/28/28px, gap 10→12px
+  - #simpleAmount : 64px → 74px, letter-spacing -3→-4px
+  - .input-euro-suffix : 32px → 37px
+  - #simpleCategory : 24→28px, padding 26→30px, min-height 90→104px
+  - Date input : 21→24px, padding 22→25px
+  - #debtorInput : 24→28px, .debtor-chevron-btn : 24→28px
+  - .debtor-input-row : min-height 90→104px
+  - #description : 21→24px, padding 22→25px, min-height 74→85px
+  - #txClearedBtn : 20→23px, padding/min-height 68→78px
+  - Ventiler/Effacer : 20→23px, padding 18→21px, min-height 68→78px
+  - Boutons File d'attente/Direct : 22→25px, padding 24→28px, min-height 76→87px
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+
+--------------------------------------------------------------------------------
+SESSION 9 — 2026-03-16
+--------------------------------------------------------------------------------
+Contexte :
+  Captures d'écran Banque / Budget / Épargne partagées.
+  Demande : +15% Saisie encore, +Splash, puis grossir à outrance Budget/Banque/Épargne
+  pour rendu "vraiment app".
+
+Modifications apportées (index_TEST.Html.txt — bloc 2 @media max-width:1023px) :
+
+  [SPLASH — correction + agrandissement]
+  - splash-logo : 200px (erreur S7) → 260px, splash-logo-wrap : 340px
+  - splash-abbrev : 56px → 64px, letter-spacing -2.5px
+  - splash-tagline : 16px → 18px, letter-spacing 2.5px
+  - splash-loader : 200px → 230px, 6px → 7px
+
+  [SAISIE — +15% supplémentaire (cumul depuis base)]
+  - .segment button : 24px → 28px, padding 23→26px
+  - #simpleAmount : 74px → 85px, letter-spacing -4→-5px
+  - .input-euro-suffix : 37px → 43px
+  - #simpleCategory : 28px → 32px, padding 30→35px, min-height 104→120px
+  - .saisie-row-top input[type=date] : 24px → 28px, padding 25→29px
+  - #debtorInput : 28px → 32px, .debtor-chevron-btn : 28→32px, padding 0 18px
+  - .debtor-input-row : min-height 104→120px
+  - #description : 24px → 28px, padding 25→29px, min-height 85→98px
+  - #txClearedBtn : 23px → 26px, padding/min-height 78→90px
+  - Ventiler/Effacer : 23px → 26px, padding 21→24px, min-height 78→90px
+  - .form-actions btn-primary/btn-dark : 25px → 29px, padding 28→32px, min-height 87→100px
+
+  [BUDGET — +20% sur tout]
+  - .budget-period-bar select : 18px → 22px, min-height 54→65px, padding 14→17px/16→19px
+  - .btn-icon : 46→55px carré, font 23→28px
+  - .disponible-card-value : 36px → 43px, letter-spacing -1→-1.5px
+  - .disponible-card-label : 13px → 16px
+  - .budget-action-bar button : 16px → 19px, min-height 48→58px, padding 12→14px/18→22px
+  - .budget-table thead th : 13px → 16px, padding 14→17px/12→15px
+  - .cat-row td : 18px → 22px, padding 22→26px
+  - .bucket-header td : 17px → 20px, padding 18→22px
+  - .bucket-header td:first-child : 18px → 22px
+
+  [BANQUE — +20% sur tout]
+  - .solde-card : padding 16→19px/10→12px
+  - .solde-label : 13px → 16px
+  - .solde-value : 20px → 24px
+  - .history-toolbar select + .history-filters-block select/input : 17→20px, min-height 50→60px
+  - .filter-uncleared label : 17px → 20px, min-height 50→60px
+  - #reconcileBtn : 15px → 18px, min-height 50→60px
+  - .tx-table tbody tr : padding 16→19px/14→17px, min-height 80→96px
+  - .td-date : 15px → 18px
+  - .td-amt : 23px → 28px
+  - .td-cat : 21px → 25px
+  - .td-debtor : 16px → 19px
+  - .tx-subtotal-label : 11px → 13px
+  - .tx-subtotal-value : 17px → 20px
+
+  [ÉPARGNE — nouvelles règles mobile (première fois)]
+  - .savings-hero : padding 28px 20px
+  - .savings-hero-label : 12px → 16px, uppercase
+  - .savings-hero-amount : 48px → 58px, weight 800, letter-spacing -2px
+  - .savings-unalloc-label : 12px → 16px
+  - .savings-unalloc-amount : 18px → 24px, weight 700
+  - .savings-section-header : 13px → 18px, weight 700
+  - .btn-savings-assign/add : 13px → 18px, min-height 56px
+  - .savings-project-card : border-radius 16px, padding 20px 16px
+  - .savings-project-name : 16px → 22px, weight 700
+  - .savings-project-meta : 16px
+  - .savings-amount-input : 20px → 26px, min-height 64px
+  - .savings-currency : 16px → 22px, weight 700
+  - .savings-slider-pct : 12px → 18px, weight 700
+  - .savings-progress-bar : height 10px
+  - .savings-project-goal/remaining : 18px/16px
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Épargne : classes cibles peuvent varier selon HTML réel (à tester sur device)
+  - Bloc 1 (sans !important ~ligne 1270) inchangé cette session
+
+--------------------------------------------------------------------------------
+SESSION 10 — 2026-03-21  [Suite de session — reprise après compaction contexte]
+--------------------------------------------------------------------------------
+Contexte :
+  Session DA (Direction Artistique) — intégration des assets du dossier DA/ :
+  logos SVG custom, icônes par thème, animation splash screen.
+  Cette session couvre la fin de la session DA (commencée lors d'une session
+  précédente) : correction des deux bugs visuels signalés après déploiement.
+
+Fichiers lus :
+  DA/WIMM_LOGOS.js               → Constante JS avec les 3 logos base64 (full)
+  DA/wimm_splash_animation.html  → Animation splash v1 (référence)
+  DA/wimm_splash_v2.html         → Preview animation v2 (créée session précédente)
+  DA/WIMM_recap_session.txt      → Documentation session DA
+  index_TEST.Html.txt            → Fichier de travail (lecture + 3 modifications)
+
+Modifications apportées (index_TEST.Html.txt) :
+
+  [FIX 1 — Aura splash : arête droite sur mobile]
+  Section : @media (max-width: 1023px) — bloc CSS #aura (~ligne 3158)
+  Problème : aura 420px fixe débordait le viewport (~390px) → overflow-x:hidden
+             sur body la coupait avec une arête droite nette (pas circulaire)
+  Fix : passage en taille responsive avec min() et calc()
+    width:  420px → min(310px, 82vw)
+    height: 420px → min(310px, 82vw)
+    margin-left: -210px → calc(min(310px, 82vw) / -2)
+    margin-top:  -210px → calc(min(310px, 82vw) / -2)
+  Résultat : sur un iPhone 390px, aura = 310px → ±155px depuis le centre,
+             entièrement dans le viewport, parfaitement circulaire.
+
+  [FIX 2 — Drawer : doublon nom/tagline dans le logo]
+  Problème : _applyTheme() injectait WIMM_LOGOS[theme] (SVG 480×580 incluant
+             "WIMM?" et "Where is my money?" en texte) dans drawer-logo-img →
+             doublon visuel avec .drawer-brand-abbrev et .drawer-brand-name HTML
+  Fix :
+    a) Ajout de la fonction _makeIconSrc(c0,c1,c2,g,shadow,shadowOp) (~ligne 4445)
+       Génère un SVG icon-only (viewBox 0 0 480 448) via encodeURIComponent :
+       - carré arrondi rx=88 avec gradient thème
+       - glyphe W+M+? complet (mêmes paths que logo officiel)
+       - pas de fond d'écran, pas de texte, pas de tagline
+    b) Ajout de la constante WIMM_ICONS (~ligne 4476) :
+       dark:    #FFE040/#FBD72F/#C9A000, glyphe #1A1B1E, ombre noire
+       zen:     #8FAF9F/#789585/#537262, glyphe #F2EFE8, ombre #2C363F
+       fintech: #7B7EF8/#6366F1/#4338CA, glyphe #FFFFFF, ombre #6366F1
+    c) _applyTheme() : WIMM_LOGOS → WIMM_ICONS (~ligne 10627)
+       drawer-logo-img affiche désormais uniquement l'icône carrée colorée,
+       sans texte — les éléments HTML .drawer-brand-abbrev / .drawer-brand-name
+       restent seuls responsables du nom et du sous-titre.
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - WIMM_LOGOS (full logos avec texte) conservé dans le JS pour usage futur éventuel
+  - CSS min() + calc() : compatible Chrome 79+, Safari 11.1+, Firefox 75+
+  - Pas de modification Code_GS_TEST.txt cette session
+
+  [CORRECTIFS POST-DÉPLOIEMENT — même session]
+
+  [FIX 3 — CSS calc(min()) invalide sur WebKit iOS]
+  Problème : calc(min(310px, 82vw) / -2) rejeté par le parser CSS WebKit mobile
+             → invalidait tout le bloc #aura → la règle était ignorée, aura toujours carrée
+             → possiblement invalidait le reste du bloc @media (barre de nav déplacée)
+  Fix : remplacement par du vw pur, syntaxe garantie partout :
+    width/height : 80vw puis 70vw puis 66vw (affinages successifs)
+    margin : -40vw → -35vw → -33vw
+  Valeur finale : 66vw (257px sur 390px) / blur 14px / will-change: transform, opacity
+
+  [FIX 4 — Scrollbar droite sur mobile (splash)]
+  Problème : overflow: visible !important sur #splash et #logo-container laissait
+             l'aura (position:absolute) déborder la .splash-screen — iOS WebKit
+             créait une zone de scroll visible sous forme de barre verticale droite
+  Fix : .splash-screen { overflow: hidden !important } dans le bloc mobile
+        → tout overflow contenu dans la zone fixed, aucune scrollbar possible
+
+  [FIX 5 — Performance animation aura sur mobile]
+  Problème : filter:blur() sur grande surface + rAF sans layer GPU dédié
+             → recalcul des pixels à chaque frame → animation saccadée vs PC
+  Fix : ajout will-change: transform, opacity sur #aura en CSS base ET mobile
+        → GPU crée un layer composité dès le chargement → animation fluide
+
+  [FIX 6 — Logo drawer trop petit / pas harmonieux]
+  Problème : logo 80px → 104px → 140px insuffisant, visuellement équivalent
+             au texte "WIMM?" (32px) situé en dessous dans la colonne centrée
+  Fix : logo 140px → 200px, abbrev 32px → 24px, brand-name 16px → 12px
+        → logo clairement dominant, texte en sous-titre discret
+
+  [FIX 7 — Drawer : tout le contenu trop petit à portée de bras]
+  Tous les éléments du drawer augmentés de +30% puis +15% supplémentaires.
+  Champ Plan augmenté de +25% supplémentaires (au-delà du +15%).
+
+  Valeurs FINALES validées (⚠ référence — ne pas régresser en cas de bug) :
+    .drawer-logo-img       : 230px × 230px
+    .drawer-brand-abbrev   : 35px
+    .drawer-brand-name     : 17px
+    .drawer-solde-label    : 20px
+    .drawer-solde-val      : 41px
+    .drawer-section-label  : 20px  | padding 18px 23px 9px
+    .drawer-menu-item      : min-height 104px | padding 25px 23px | border-radius 18px
+    .drawer-menu-icon      : 46px (+ svg 46px)
+    .drawer-menu-title     : 28px bold
+    .drawer-menu-sub       : 21px
+    .drawer-menu-arrow     : 35px
+    .btn-pin-icon          : 60px (+ svg 32px)
+    #planDrawerSelect      : 32px | padding 26px 20px | min-height 94px
+    drawer width           : min(88vw, 380px)
+
+  ★ VERSION DRAWER + LOGO + ANIMATION SPLASH VALIDÉE — référence pour corrections futures
+    En cas de régression sur splash/drawer/logo, reprendre cette session (S10).
+
+--------------------------------------------------------------------------------
+SESSION 11 — 2026-03-21  [Suite de session — reprise après compaction contexte]
+--------------------------------------------------------------------------------
+Contexte :
+  Poursuite de la session 10 — amélioration mobile de la barre de navigation,
+  des onglets Paramètres, et fermeture des modals par clic hors du contenu.
+
+Fichiers modifiés :
+  index_TEST.Html.txt
+
+Modifications apportées :
+
+  [FIX 8 — Barre de navigation bas trop petite]
+  Section : @media (max-width: 1023px) — bloc .bottom-nav (~ligne 2899)
+  Valeurs finales :
+    .bottom-nav         : width calc(100%-20px), max-width 520px, border-radius 32px
+    .nav-item           : padding 17px 5px 13px, font-size 22px, border-radius 24px
+    .nav-item .nav-icon : font-size 50px (+ svg 50px)
+
+  [FIX 9 — Paramètres : tous les onglets trop petits sur mobile]
+  Section : @media (max-width: 1023px) — nouveau bloc SETTINGS (~ligne 3208)
+  Bloc CSS complet ajouté couvrant :
+
+  Onglet Catégories :
+    - .settings-collapse-header : padding 18px 10px 14px, min-height 56px (discret)
+    - .settings-collapse-label  : 23px
+    - .settings-bucket-header   : padding 20px 16px, min-height 72px, font 26px/800
+    - .settings-item / .smgmt-item : padding 18px 16px, min-height 72px, font 24px
+    → Hiérarchie visuelle : bucket (26px/800) > catégorie (24px)
+
+  Onglet Groupes :
+    - .smgmt-bucket-header : 26px/800, min-height 72px
+    - .smgmt-item          : 24px, min-height 72px
+    - .drag-handle         : 34px
+
+  Onglet Payees :
+    - Ajout JS : collapse/expand par catégorie via smgmt-bucket-header +
+      smgmt-group-items (même pattern que Catégories/Groupes)
+    - Suppression du bouton ✏️ (clic sur la ligne suffit pour éditer)
+    - CSS : catégorie (smgmt-bucket-header) visuellement plus grande que payee (smgmt-item)
+
+  Onglet Préférences :
+    - .pref-tab-btn             : 24px, padding 18px 14px, min-height 64px
+    - .theme-option             : padding 22px, min-height 80px
+    - .theme-swatch             : 56px×56px, font 28px
+    - .theme-label / sublabel   : 24px / 18px
+    - #settings-panel-prefs [style*="font-size:13px"] : 22px (override inline)
+    - #prefSavingsCat / #prefAssignCat : 22px, min-height 58px
+
+  Onglet Plans :
+    - #plansSettingsList > div  : padding 20px 18px, min-height 80px
+    - [style*="font-size:14px"] : 26px (override inline)
+    - [style*="font-size:11px"] : 20px (override inline)
+    - buttons                   : 56px×56px, border-radius 14px
+
+  [FIX 10 — Fermeture des modals par clic en dehors]
+  Ajout JS (~ligne 11284, avant _runSplashAnimation) :
+    Listener global "click" sur document :
+    - Si clic sur .modal-overlay.active et target === l'overlay (pas le contenu)
+    - Cherche .btn-cancel → click() si présent (respect de la logique annulation)
+    - Sinon retire la classe "active" directement
+  → Tous les modals de l'app se ferment par clic sur le fond
+
+  [FIX 11 — Boutons Tout plier/déplier — onglet Payees]
+  HTML : ajout d'un div.cat-fold-bar dans #settings-panel-debtors (même structure
+         que l'onglet Catégories) avec :
+    ↓ Tout déplier → expandAllDebtorGroups()
+    ↑ Tout replier → collapseAllDebtorGroups()
+  JS : ajout des fonctions expandAllDebtorGroups() et collapseAllDebtorGroups()
+       (même pattern que expandAllCatGroups/collapseAllCatGroups,
+        ciblant #debtorsSettingsList2 .smgmt-group-items / .smgmt-bucket-header)
+  CSS mobile : .cat-fold-bar padding augmenté, .btn-fold-text 13px → 20px
+
+  [FIX 12 — Modals Paramètres agrandis sur mobile]
+  Ajout d'un bloc CSS dans @media (max-width: 1023px) — section MODALS PARAMÈTRES.
+  Cible les 6 modals accessibles depuis les onglets Paramètres :
+
+  #catModal (Créer/Modifier Catégorie) :
+    h3               : 28px
+    input, select    : 22px | padding 18px 14px | min-height 62px | radius 14px
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #bucketModal (Créer/Modifier Groupe) :
+    h3               : 28px
+    input            : 22px | padding 18px 14px | min-height 62px | radius 14px
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #debtorModal (Créer/Modifier Payee/Bénéficiaire) :
+    h3               : 28px
+    label            : 20px
+    input, select    : 22px | padding 18px 14px | min-height 62px | radius 14px
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #newPlanModal (Nouveau Plan) :
+    h3               : 26px
+    [font-size:12px] : 18px | [font-size:11px] : 18px | [font-size:13px] : 20px
+    input            : 22px | padding 16px 14px | min-height 62px | radius 14px
+    #newPlanCopyFromSelect : 20px | padding 14px 12px
+    #planRadioLabelNone/Copy : padding 18px 14px | radius 14px
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #renamePlanModal (Renommer Plan) :
+    h3               : 26px
+    [font-size:12px] : 18px
+    input            : 22px | padding 16px 14px | min-height 62px
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #deletePlanModal (Supprimer Plan) :
+    h3               : 26px
+    [font-size:15px] : 22px bold (nom du plan)
+    [font-size:13px] : 20px | line-height 1.6 | padding 16px (bloc warning)
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+  #switchPlanModal :
+    .modal-buttons   : 22px | padding 20px | min-height 68px
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Les overrides inline styles (Plans, Prefs) utilisent [style*="..."] + !important
+  - Pas de modification Code_GS_TEST.txt cette session
+
+  [FIX 13 — Masquer le titre de section en haut de l'écran (mobile)]
+  Problème : h1.app-title ("Saisie", "Budget", "Banque", "Épargne") redondant sur
+             mobile — la barre de navigation bas suffit à situer l'utilisateur.
+  Fix CSS mobile : .app-title { display: none !important }
+  → Le header est plus aéré. Desktop inchangé.
+  Note : .settings-panel-title (titres onglets Paramètres) conservé à 26px —
+         une suppression erronée avait été faite et corrigée dans la même passe.
+
+Notes :
+  - Desktop (min-width: 1024px) : aucune modification
+  - Pas de modification Code_GS_TEST.txt cette session
+
+  ★ VERSION ANIMATION / DRAWER / PARAMÈTRES MOBILE VALIDÉE ★
+    Périmètre complet couvert par Sessions 10 + 11 :
+      - Splash animation  : aura responsive vw, GPU layer, overflow corrigé
+      - Drawer            : logo icon-only par thème, toutes tailles validées
+      - Barre nav bas     : icônes 50px, texte 22px
+      - Onglets Paramètres (Catégories, Groupes, Payees, Préférences, Plans)
+      - Modals Paramètres (Catégories, Groupes, Payees, Nouveau/Renommer/Supprimer Plan)
+      - Boutons Tout plier/déplier  : Catégories + Payees
+      - Fermeture modals par clic hors contenu
+      - Titre de section app-header masqué sur mobile
+    En cas de régression, reprendre Sessions 10 + 11.
+
+--------------------------------------------------------------------------------
+SESSION 12 — 2026-03-21  [Suite de session — reprise après compaction contexte]
+--------------------------------------------------------------------------------
+Contexte :
+  Poursuite de la session 11 — améliorations UX onglet Saisie (mobile et desktop).
+  Objectif : refonte complète du champ Saisie (ordre des champs, polices, couleurs,
+  séparation visuelle des cartes) + harmonisation desktop après restructuration.
+
+Fichiers modifiés :
+  index_TEST.Html.txt
+
+Modifications apportées :
+
+  [FIX 14 — Onglet Saisie : réordonnement des champs]
+  Nouvel ordre : 1-Montant 2-Date 3-Bénéficiaire 4-Description
+                 5-Catégorie/Ventiler/Effacer 6-Déjà sur relevé 7-File/Direct
+  Restructuration HTML :
+    - Extraction du montant dans un #amountBlock wrapper séparé (hors simpleFormBlock)
+    - splitFormBlock déplacé sous amountBlock
+    - .group (date+bénéf+desc) suit splitFormBlock
+    - #simpleFormBlock contient uniquement catégorie + boutons + txClearedBtn
+  JS : enableSplitMode / disableSplitMode mis à jour pour toggle #amountBlock
+  CSS bloc 1 (mobile) : ordering flex (#transactionsSection flex-column,
+    #amountBlock/splitFormBlock order:2, segment order:1, date+bénéf order:3,
+    form-actions order:4) → ordonnancement visuel correct sur mobile
+
+  [FIX 15 — Saisie mobile : augmentations polices et styles]
+  - Date : +40% (28px → 50px), police identique à l'app (family:inherit weight:700)
+  - Bénéficiaire (#debtorInput) : 32px → 40px
+  - Chevron bénéficiaire : 40px
+  - Dropdown bénéficiaire : options 36px, min-height 88px, sous-label 24px,
+    séparateur catégorie 20px, max-height 420px, border-radius 18px
+  - Catégorie (#simpleCategory) : 32px → 46px, min-height 140px
+  - Mode ventilation : tous les éléments +25%
+    (split-line select/input 25px, btn-remove 55px, btn-secondary 25px,
+     totalAmount 35px, reste-badge 22px, btn-mini 21px, label 26px)
+  - Logo splash : 260px → 320px (proportionnel au texte)
+  - Bénéficiaire min-height 120px, debtor-input-row min-height 120px
+
+  [FIX 16 — Saisie mobile : couleur montant selon sens + couleur au chargement]
+  Modif JS setSense() : applique style.setProperty("color", c, "important")
+    sur #simpleAmount ET .input-euro-suffix selon le sens actif :
+      sortie    → var(--red)      rouge
+      entree    → var(--green)    vert
+      prevision → var(--primary)  or/indigo selon thème
+  Fix chargement : setSense(currentSense) appelé dans initSaisie() après
+    fillDebtorDatalist() → couleur appliquée dès l'ouverture sans interaction
+
+  [FIX 17 — Saisie mobile : séparation visuelle des cartes]
+  CSS bloc 2 (!important) :
+    - Cartes montant/catégorie/split : border-radius 16px, border 1.5px solid
+      rgba(128,128,128,0.30), box-shadow 0 3px 14px rgba(0,0,0,0.10)
+    - Carte date+bénéf+desc : overflow: visible (pour dropdown non clippé)
+    - Séparateurs internes : rgba(128,128,128,0.38) (plus marqué qu'avant 0.14)
+    - #transactionsSection : gap 14px
+
+  [FIX 18 — Saisie mobile : zone grisée bénéficiaire supprimée]
+  CSS bureau (#transactionsSection .debtor-input-row) :
+    background: transparent, border: none, border-bottom seul conservé
+  CSS mobile : .saisie-row-top .debtor-wrap et .debtor-input-row → background transparent
+
+  [FIX 19 — Saisie mobile : dropdown bénéficiaire scrollable]
+  Bug : overflow: hidden sur .group clippait le dropdown position:absolute
+  Fix : règle séparée pour la carte date+bénéf+desc avec overflow: visible !important
+        (distincte des cartes montant/split/catégorie qui gardent overflow: hidden)
+
+  [FIX 20 — Saisie mobile : modal création bénéficiaire agrandi]
+  Nouveau bloc CSS mobile pour #debtorModal :
+    h3 : 36px | input/select : 32px/80px | label : 24px | buttons : 28px/84px
+
+  [FIX 21 — Desktop : harmonisation layout Saisie après restructuration]
+  Problème : restructuration mobile avait brisé l'affichage desktop —
+    - € flottait à l'extrême droite (position:absolute right:9px sur container width:100%)
+    - Cards sans séparation claire, layout inharmonieux
+  Fixes CSS desktop (hors media query) :
+    - #amountBlock .input-euro-wrap : width 100% → auto (sizée au contenu)
+    - #amountBlock .input-euro-suffix : position: static (override base position:absolute)
+    - #amountBlock #simpleAmount : font 80px → 88px, letter-spacing -5px, bold 800
+    - #transactionsSection : display flex column, gap 12px (cartes séparées)
+    - #transactionsSection > .group:not(#queueSection) : border-radius 18px,
+      overflow hidden, padding 0, gap 0 (carte date+bénéf+desc unifiée)
+    - .saisie-row-top : flex-direction row, date (160px fixe) + bénéf (flex:1) côte à côte
+      avec border-right séparateur vertical
+    - #description : border-top séparateur, border-radius 0
+    - #simpleCategory : border-radius 0, border-bottom, background transparent
+
+Notes :
+  - Toutes les modifications mobile dans @media (max-width: 1023px) bloc 1 et bloc 2
+  - Modifications desktop : CSS hors media query (lignes ~846-879)
+  - Pas de modification Code_GS_TEST.txt cette session
+
+  ★ VERSION SAISIE MOBILE + DESKTOP HARMONISÉE VALIDÉE ★
+    En cas de régression sur l'onglet Saisie, reprendre la Session 12.
+
+--------------------------------------------------------------------------------
+SESSION 13 — 2026-03-21  [Suite après compaction contexte]
+--------------------------------------------------------------------------------
+Contexte :
+  Poursuite Session 12 — harmonisation définitive desktop onglet Saisie.
+  Le layout desktop restait inharmonieux après la restructuration mobile :
+  - € flottait à droite, hors de la carte montant
+  - Taille du montant trop grande
+  - Navigation par onglets cassée (bug critique)
+
+Modifications apportées (index_TEST.Html.txt) :
+
+  [FIX 22 — Desktop : migration CSS amountBlock vers @media (min-width: 1024px)]
+  Cause racine du € flottant : les règles étaient dans le CSS de base (hors media
+    query). La règle `.input-euro-wrap input { flex: 1 !important }` (ligne ~1720)
+    battait `flex: none` sans !important → l'input s'étirait à 100%, poussant le €
+    en position:absolute à l'extrême droite.
+  Fix : suppression de toutes les règles amountBlock du bloc CSS de base ;
+    déplacement dans @media (min-width: 1024px) avec !important sur chaque propriété :
+      - flex: none !important           → input ne s'étire plus
+      - position: static !important     → € sort du flux absolu
+      - right: auto !important          → annule le right:9px de base
+      - display: inline-flex !important → wrap se dimensionne à son contenu
+      - width: auto !important          → wrap ne prend pas 100%
+      - justify-content: center !important sur .simple-form-row → centrage
+      - flex-direction: column !important + gap: 14px sur #transactionsSection
+        (sans display: flex !important — voir FIX 24)
+
+  [FIX 23 — Desktop : taille montant réduite]
+  88px → 56px (trop grand pour un écran PC standard)
+  € suffix : 42px → 28px, margin-bottom 14px → 6px
+  Padding .input-euro-wrap : 36px → 22px vertical
+
+  [FIX 24 — BUG CRITIQUE : onglet Saisie restait visible sur tous les onglets]
+  Cause : `#transactionsSection { display: flex !important }` forçait la section
+    à rester visible (overridait le `display: none` du système de navigation).
+  Fix : suppression de `display: flex !important` — seuls flex-direction et gap
+    sont gardés avec !important. Le display est géré par la logique JS des onglets.
+
+Notes :
+  - Mobile (max-width: 1023px) : AUCUNE modification — blocs 1 et 2 intacts.
+  - Pas de modification Code_GS_TEST.txt cette session.
+  - Leçon retenue : ne jamais mettre display !important sur une section d'onglet.
+
+  ★ ONGLET SAISIE VALIDÉ COMPLÈTEMENT (mobile + desktop) ★
+    Mobile  : layout, polices, couleurs, cartes, dropdown, split mode — validé S12
+    Desktop : € centré collé au montant, montant 56px gras, gap 14px entre cartes — validé S13
+    En cas de régression, reprendre Sessions 12 + 13.
+
+--------------------------------------------------------------------------------
+SESSION 14 — 2026-03-21  [Suite après compaction contexte]
+--------------------------------------------------------------------------------
+Contexte :
+  Onglets Épargne et Banque — améliorations desktop et mobile.
+  Barre de recherche globale ajoutée à l'onglet Banque (PC + mobile).
+
+Fichiers modifiés :
+  index_TEST.Html.txt uniquement
+
+Modifications apportées :
+
+  [ÉPARGNE — Desktop]
+
+  [FIX 25 — Hero fixe + body scrollable]
+  Problème : la page épargne avait _setSheetScroll("locked") → le sheet ne scrollait
+    pas, et le contenu était masqué derrière la bottom-nav.
+  Fix CSS (base, toutes tailles) :
+    - [id="savings-page"] : flex-direction column, height 100%, overflow hidden
+    - .savings-hero : flex-shrink 0 (reste en haut)
+    - .savings-body : flex 1, overflow-y auto (scrolle indépendamment)
+  Fix JS : sp.style.display = "flex" (au lieu de "block") dans showSavingsPage()
+  Fix JS : _setSheetScroll("locked") conservé — le scroll interne du body gère tout
+
+  [FIX 26 — Épargne desktop : polices et éléments agrandis]
+  Bloc CSS ajouté dans @media (min-width: 1024px) :
+    - Hero : label 14px, montant 68px, badge "à répartir" 24px
+    - Cartes projet : nom 20px, input montant 26px, € 20px, radius 20px
+    - Slider : 8px hauteur, thumb 28px, % 15px
+    - Boutons footer : 14px | Enregistrer : 17px
+    - Padding body : 28px 24px 120px
+
+  [ÉPARGNE — Mobile]
+
+  [FIX 27 — Épargne mobile : polices agrandies (lecture à bout de bras)]
+  Bloc CSS @media (max-width: 1023px) — section ÉPARGNE :
+    - Hero label : 16→21px (+15%) | Montant total : 58→72px (+12%)
+    - Badge "à répartir" : label 20px, valeur 31px
+    - Section header : 27px | Boutons Nouveau/Assigner : 26px, min-height 80px
+    - Cartes projet :
+        nom : 32→36px | input montant : 38→50px (accent mis) | € : 30→34px
+        target : 22px | padding carte : 30px 22px | radius 20px
+    - Slider : 14px hauteur, thumb 48px, % 29px
+    - Boutons footer (Modifier/Supprimer/Utiliser) : 25px, 16px 24px padding
+    - Bouton Enregistrer : 27px, 22px 52px padding
+
+  [FIX 28 — Modaux Épargne agrandis (+28%) sur mobile]
+  Nouveau bloc CSS ciblant #addProjectModal, #editProjectModal,
+    #withdrawModal, #deleteProjectModal :
+    - Titre modal : 34px | Labels : 24px
+    - Inputs : 32px, padding 26px, min-height 80px, radius 16px
+    - Boutons Confirmer/Annuler : 28px, min-height 80px
+
+  [BANQUE — Mobile]
+
+  [FIX 29 — Banque mobile : tout +25%, cartes solde +30%]
+  Bloc CSS @media (max-width: 1023px) — section BANQUE :
+    Cartes Pointé/Non pointé/Prévisionnel (+30%) :
+      .solde-label : 16→21px | .solde-value : 24→31px | padding 19→25px
+    Transactions (+25%) :
+      .td-amt : 28→26px (réduit ensuite, voir FIX 31)
+      .td-cat : 25→31px | .td-debtor : 19→24px | .td-date : 18→23px
+      min-height tr : 96→120px | padding tr : 24px 21px
+    Filtres (+25%) :
+      selects : 20→28px, min-height 60→82px
+      filter-uncleared label : 20→25px | reconcileBtn : 18→23px
+    Sous-total (entrées/sorties/solde) (+25%) :
+      label : 13→16px | valeur : 20→25px
+
+  [FIX 30 — Banque mobile : lignes prévisions proportionnelles aux TX]
+  Nouveau bloc CSS — section PREVISIONS :
+    .prevision-row    : padding 22px 18px, min-height 110px, radius 14px
+    .prevision-cat    : 28px | .prevision-amount : 26px | .prevision-meta : 20px
+    Boutons :
+      .btn-prev-recu / unlink : 52px hauteur, 22px | .btn-prev-edit / del : 52px, 26px
+
+  [FIX 31 — Banque mobile : montant .td-amt réduit]
+  35px → 26px (35px trop grand, cassait l'uniformité des lignes)
+
+  [FIX 32 — Banque : tri par défaut du plus récent au plus ancien]
+  JS : let _sortCol = "date", _sortDir = -1 → _sortDir = 1
+  Également : resetAllFilters() remis à _sortDir = 1 (cohérence)
+
+  [FIX 33 — Banque : visibilité des champs de filtre]
+  CSS mobile :
+    - Ajout color: var(--text) !important + background: var(--segment) !important
+      sur .history-toolbar select et .history-filters-block input/select
+    - -webkit-appearance: none + appearance: none pour forcer le rendu CSS
+      (pas le style natif qui écrase les couleurs du thème sombre)
+  Fix checkboxes "Non pointées" / "Masquer verr." :
+    - .filter-uncleared input[type="checkbox"] : width/height 32px, min-height unset,
+      -webkit-appearance: checkbox (remet la forme carrée native)
+
+  [FIX 34 — Banque : labels descriptifs dans les filtres]
+  JS fillSelect() : première option contextuelle selon l'id :
+    filterPeriod   → "Toutes périodes"
+    filterCategory → "Toutes catégories"
+  HTML : filterSense → "↕ Tous sens" (au lieu de "↕ Tous")
+
+  [FIX 35 — Banque : barre de recherche globale (PC + mobile)]
+  HTML : ajout <input id="searchAll" class="search-all-input"> en tête de
+    .history-filters-block (avant la première ligne de selects)
+  CSS base : .search-all-input — fond var(--segment), couleur var(--text),
+    radius 12px, police 15px, focus border-color var(--primary)
+  CSS mobile : font-size 28px, padding 22px 18px, min-height 78px, radius 14px
+  JS applyFilters() : filtre en temps réel sur :
+    période · bénéficiaire · catégorie · description · montant (abs)
+  JS resetAllFilters() : efface le champ searchAll
+
+  Options période spéciales ajoutées au select filterPeriod (PC + mobile) :
+    "Mois en cours" | "3 derniers mois" | "6 derniers mois" | "Année en cours"
+    + séparateur visuel avant les périodes Sheets habituelles
+  JS applyFilters() : gestion des valeurs spéciales (__current_month,
+    __last_3_months, __last_6_months, __current_year) via new Date(t.rawDate)
+
+Notes :
+  - Mobile (max-width: 1023px) : blocs 1 et 2 épargne/banque modifiés
+  - Desktop (@media min-width: 1024px) : épargne uniquement (banque inchangée desktop)
+  - Le zoom (viewport user-scalable) a été temporairement activé puis annulé —
+    risque d'impact sur les autres onglets → viewport remis à l'identique
+
+  [FIX 36 — Barre de navigation : aération]
+  Objectif : nav trop dense → plus de respiration entre items et autour.
+  CSS @media (max-width: 1023px) :
+    .bottom-nav : padding 8px → 10px 12px, gap 4px → 6px, border-radius 32px → 36px
+    .nav-item   : gap icône/label 6px → 9px, padding 17px 5px 13px → 18px 6px 14px,
+                  border-radius 24px → 26px
+
+  [FIX 37 — Banque : "Revenus attendus" agrandit sur mobile]
+  .previsions-sep-title : 12px → 22px, letter-spacing 1px, padding 6px 0
+  #previsionsCount      : 11px → 18px, padding 3px 10px, border-radius 12px
+  #previsionsToggleIcon : 10px → 18px
+  .previsions-sep       : margin 18px 0 16px, gap 12px (plus aéré, zone tap plus grande)
+
+  ★ ONGLETS ÉPARGNE + BANQUE + NAV (mobile + desktop) — SESSION 14 VALIDÉE ★
+    Épargne : hero fixe, body scrollable, polices agrandies, modaux +28%
+    Banque   : +25/30%, prévisions proportionnelles, recherche globale,
+               options période "mois en cours / 3 mois / 6 mois / année",
+               tri newest-first, filtres visibles, checkboxes carrées
+    Nav bar  : aérée (padding, gap, border-radius)
+    "Revenus attendus" : 12px → 22px, badge et flèche proportionnels
+
+--------------------------------------------------------------------------------
+SESSION 15 — 2026-03-22  [Pipeline de déploiement automatisé]
+--------------------------------------------------------------------------------
+Contexte :
+  - Mise en place d'un pipeline de déploiement via clasp (CLI Apps Script)
+  - Objectif : remplacer le copier-coller manuel dans l'éditeur Apps Script
+
+Travail réalisé :
+  1. Installation Node.js v24 + clasp global (npm install -g @google/clasp)
+  2. Activation Google Apps Script API sur le compte Google
+  3. clasp login + clasp clone (Script ID : 1EGdEgeC_MHZu1aHGHBVq-rHfiT1h0pstH-ab0mHR29cEUFZCKO9pztLG)
+  4. Création du dossier deploy/ avec Index.html, Code.js, appsscript.json, push.bat
+
+Bugs rencontrés et résolus :
+  - "Script is already up to date" : clasp comparait un hash local obsolète
+    → Fix : injection d'un timestamp <!-- build: YYYY-MM-DD HH:mm:ss --> dans Index.html
+             à chaque run pour forcer un hash différent à chaque fois
+  - copy /Y échouait avec "Impossible de développer le 2ème nom de fichier"
+    → Fix : remplacement par PowerShell Copy-Item
+  - Le terminal se fermait avant d'afficher les résultats
+    → Fix : cmd /k "%~f0" INNER pour garder la fenêtre ouverte
+  - [3/3] clasp deploy ne s'exécutait jamais (batch s'arrêtait après clasp push)
+    → CAUSE RACINE : clasp est un .cmd sur Windows ; appeler un .cmd depuis un .bat
+      sans le mot-clé "call" provoque l'arrêt définitif du .bat parent
+    → Fix : call clasp push --force + call clasp deploy ...
+
+Pipeline final (push.bat) :
+  1. PowerShell Copy-Item : index_TEST.Html.txt → deploy/Index.html
+                            Code_GS_TEST.txt   → deploy/Code.js
+  2. Injection timestamp dans Index.html (force hash différent)
+  3. call clasp push --force  (envoie les fichiers vers Apps Script)
+  4. call clasp deploy --deploymentId ...  (publie la nouvelle version)
+  5. Ouverture automatique de l'URL /exec dans le navigateur
+
+  ★ PIPELINE VALIDÉ — Double-clic push.bat suffit pour déployer ★
+  URL : https://script.google.com/macros/s/AKfycbxRBAggvRZgcG324NBYLa4ZBPvaf7fiVUTbYN5LMAQ6erVgN8CbA4u6cLERNuY9jSwm/exec
+
+--------------------------------------------------------------------------------
+SESSION 16 — 2026-03-22  [Desktop compact — tous onglets validés]
+--------------------------------------------------------------------------------
+Contexte :
+  Mise en place d'overrides CSS desktop compacts pour tous les onglets principaux.
+  Correction d'un bug architectural majeur : les règles "desktop" étaient placées
+  dans un bloc @media (max-width: 1023px) → jamais appliquées sur PC.
+  Fichier modifié : index_TEST.Html.txt uniquement.
+
+Bug architectural corrigé :
+  PROBLÈME : Le bloc "BANQUE desktop compact" (et autres) se trouvait à ~ligne 1929,
+             à l'intérieur du bloc @media (max-width: 1023px) (lignes 1561–3265).
+             Les règles n'étaient donc appliquées que sur mobile, jamais sur desktop.
+  SOLUTION : Déplacement de TOUTES les règles desktop dans le bloc
+             @media (min-width: 1024px) ligne ~3717+
+             ("DESKTOP OVERRIDES — doivent être en dernier pour gagner la cascade").
+  RÈGLE RETENUE : Toujours écrire les overrides desktop dans le DERNIER bloc
+                  @media (min-width: 1024px) du fichier (ligne ~3717).
+
+Structure des blocs media queries (ordre dans le fichier) :
+  1. @media (min-width: 1024px)  ~1178–1542  : premier bloc desktop (Saisie, layout)
+  2. @media (max-width: 1023px)  ~1547       : flèche drawer uniquement
+  3. @media (max-width: 1023px)  ~1561–3265  : mobile principal
+  4. @media (max-width: 1023px)  ~3266–3714  : "iOS native feel" (grandes tailles)
+  5. @media (min-width: 1024px)  ~3717+      : DESKTOP OVERRIDES (référence finale)
+
+Modifications apportées :
+
+  [ONGLET BANQUE] — Desktop compact (bloc 5, ~ligne 3719)
+  - Cartes soldes : flex-direction row, padding 5px 10px, fonts 10/15px
+  - Barre recherche : padding 5px, font 13px
+  - Toolbar filtres : height 26px, font 12px, flex-wrap nowrap
+  - Boutons toolbar / Réconcilier : height 26px, font 11px
+  - Sous-total : padding 5px, fonts 9/13px
+  - Table : thead 9px, tbody padding 3px 5px, border-bottom 1px rgba
+  - Checkbox sélection : 12×12px (spécificité .tx-table td.td-check .tx-checkbox)
+  - Icône pointer (rond) : 14×14px, border-width 1px
+  - FAB (+) : display none (navigation via onglet Saisie)
+  - Revenus attendus : padding 5px 8px, fonts 10-12px, boutons 22px
+    → Ajout .btn-prev-close (Clôturer) qui manquait dans les règles précédentes
+
+  [BOUTON AJOUT TRANSACTION — Banque + Budget]
+  - HTML : <button id="btnAddTxFromBanque"> ajouté dans la 2e .history-toolbar
+    après le bouton Réconcilier + reset, tout à droite
+  - Mobile : display none (le FAB suffit)
+  - Desktop : pill jaune, height 26px, font 11px, onclick="openAddModal()"
+  - Texte : "＋ Ajouter transaction"
+  - Budget : .btn-budget-add texte ajouté "＋ Ajouter transaction",
+    CSS desktop adapté (width auto, pill, height 26px)
+
+  [MODAL AJOUTER TRANSACTION] — Desktop compact
+  - #addModal { align-items: center } → annule le bottom-sheet mobile (flex-end)
+  - .modal-large : padding 16px, gap 6px, max-width 440px, border-radius 12px
+  - h3 : 15px
+  - Segment buttons : font 12px, padding 6px
+  - Inputs/selects : font 13px, padding 6px 10px, height 32px, border-radius 7px
+  - Boutons modal : padding 8px, font 13px, border-radius 8px
+
+  [ONGLET ÉPARGNE] — Desktop compact (bloc 5)
+  - Hero : padding 14px, font-size 34px, label 10px
+  - Projets : padding 10px 12px, border-radius 10px, fonts 11-13px
+  - Slider : height 5px, thumb 15px
+  - Boutons actions : 11-13px, padding réduit, min-height unset
+  - Modals épargne : fonts raisonnables (18px titre, 15px input, 13px boutons)
+
+  [ONGLET PARAMÈTRES] — Desktop compact (bloc 5)
+  - Onglets settings : 12px, padding 5px 12px
+  - Lignes Catégories & Payees : padding 5px, smgmt-item-name 12px,
+    sub 10px, bkt-drag-handle 12px, bucket headers 11px, chevrons 9px
+  - Boutons panel (＋ Ajouter, Tout plier) : height 22px, font 11px
+  - Préférences : sections inline-style ciblées par [style*="..."],
+    theme-option 7px padding, swatch 24px, theme-label 12px/10px,
+    form-input selects 26px
+  - Modals plans : fonts 13-17px, min-height unset
+
+Validations :
+  ★ TOUS ONGLETS PC + MOBILE VALIDÉS — SESSION 16 ★
+  Saisie | Banque | Épargne | Paramètres (Catégories, Payees, Préférences, Plans)
+  Budget : modal Ajouter transaction ajusté + bouton libellé
+
+--------------------------------------------------------------------------------
+SESSION 17 — 2026-03-23  [Desktop compact — onglet Budget + UX améliorations]
+--------------------------------------------------------------------------------
+Contexte :
+  Poursuite des améliorations desktop compact sur l'onglet Budget.
+  Ajouts fonctionnels : modal ajout transaction depuis Banque/Budget,
+  calculatrice budget enchaînée, mémoire de période, bouton mois en cours.
+  Fichier modifié : index_TEST.Html.txt uniquement.
+
+VALIDATIONS DE CETTE SESSION :
+  ★ VUE PC — TOUS ONGLETS VALIDÉS ★
+  Saisie | Banque | Épargne | Paramètres | Budget — PC COMPLET
+  Mobile : Saisie | Banque | Épargne | Paramètres déjà validés sessions précédentes
+
+Modifications apportées :
+
+  [MODAL AJOUT TRANSACTION — PC compact]
+  - #addModal { align-items: center } sur desktop (bottom-sheet → centré)
+  - .modal-large : max-width 580px, padding 24px 28px, gap 10px, border-radius 14px
+  - Inputs/selects : font 14px, height 36px, padding 8px 12px
+  - Segment buttons : font 13px, padding 8px 6px
+  - Boutons Annuler/Enregistrer : padding 12px, font 15px, border-radius 10px
+  - Bouton "＋ Ajouter transaction" ajouté dans toolbar Banque (tout à droite)
+    + dans toolbar Budget — pill, height 26px, font 11px
+  - CSS : .btn-budget-add width auto, pill, height 26px
+
+  [MOBILE — Modal ajout transaction]
+  - Ajout CSS dans @media (max-width: 1023px) :
+    Champs 56px min-height, font 20px
+    Catégorie + Montant en colonne (flex-direction: column)
+    Ventiler : pleine largeur, 54px, 19px
+    "Déjà sur le relevé" : 60px, 18px
+    Annuler/Enregistrer : 62px min-height, 20px, bold
+    Titre : 26px | Segment : 17px, 12px padding
+  - FAB masqué quand #addModal est ouvert (à faire si besoin)
+
+  [ONGLET BUDGET — Toolbar HTML]
+  - ▼ → "▼ Déplier tout" (span.btn-fold-txt masqué sur mobile)
+  - ▲ → "▲ Plier tout" (span.btn-fold-txt masqué sur mobile)
+  - ⚠️ → "⚠️ Dépassements" (span.btn-depas-txt masqué sur mobile)
+  - "📋 Copier budget" → "📋 Report budget M-1" (span.btn-copy-txt)
+  - Spans masqués en base CSS, affichés sur desktop
+
+  [ONGLET BUDGET — Desktop compact CSS]
+  Bloc @media (min-width: 1024px) ~ligne 3877 :
+  - Barre période : height 28px, font 13px, flex 0 1 160px, btn-icon 24px
+  - Carte "À assigner" : padding 6px 14px, min-width 200px, font 20px/10px
+  - Projection : font 12px
+  - budget-action-bar : padding 4px 10px, gap 5px, flex-wrap nowrap
+  - Boutons toolbar : height 26px, font 11px
+  - Textes labels (btn-fold-txt etc.) : display inline
+  - Table : thead 10px, cat-row 4px padding / 13px font
+  - bucket-header : 5px padding / 12px font
+  - budget-input : 12px font, height 26px, width 80px
+  - budget-scroll-body : padding 4px 6px 40px
+
+  [CALCULATRICE BUDGET — Icône moderne]
+  - Bouton ⊕ remplacé par grille 2×2 : +/−/×/÷
+  - HTML : <span class="bcp-icon"><span>+</span><span>−</span><span>×</span><span>÷</span></span>
+  - CSS .bcp-icon : display:grid, grid-template-columns 1fr 1fr, 14×14px, font 7px bold
+  - Résultat : icône compacte type "calculatrice" moderne
+
+  [COMMENTAIRE CATÉGORIE — Déplacement bouton 💬]
+  - Déplacé de la cellule "Nom" vers la cellule "Assigné" (entre input et bcp-trigger)
+  - Ordre final dans la cellule : budget-input → bcp-trigger (÷) → cat-note-btn (💬)
+  - Visibilité améliorée : opacity 0.2 → 0.45, hover → 1, padding 0 2px
+  - JS row.querySelector('.cat-note-btn') fonctionne toujours (cherche dans toute la ligne)
+
+  [MÉMOIRE PÉRIODE BUDGET]
+  JS :
+  - Ajout var _selectedPeriod = null (globale)
+  - buildPeriodSelect() : restaure _selectedPeriod si défini, sinon mois courant
+  - shiftPeriod() : mémorise select.value dans _selectedPeriod
+  - onchange du select : mémorise + met à jour btn "Mois en cours"
+  - goToCurrentPeriod() : remet _selectedPeriod=null + rebuild select + loadBudget()
+  HTML :
+  - Ajout <button id="btnCurrentPeriod" class="btn-current-period"> dans .period-nav
+  - Affiché uniquement si période ≠ mois courant (display:none par défaut)
+  - Texte : "↩ Mois en cours"
+  CSS base :
+  - .btn-current-period : pill or rgba(251,215,47,0.15), border or rgba 0.3,
+    height 28px, font 12px, white-space nowrap
+
+--------------------------------------------------------------------------------
+SESSION 18 — 2026-03-25  [Mobile Budget/Épargne + Fix GAS + PC Épargne compact]
+--------------------------------------------------------------------------------
+Contexte :
+  Suite session 17. Travail principalement sur mobile (Budget + Épargne) et
+  fix critique GAS. Validation visuelle PC Épargne compacté.
+  Fichiers modifiés : index_TEST.Html.txt + Code_GS_TEST.txt
+
+VALIDATIONS DE CETTE SESSION :
+  ★ Vue PC — TOUS ONGLETS VALIDÉS ★ (inchangé vs session 17)
+  ★ Mobile — Saisie | Banque | Épargne | Paramètres | Budget VALIDÉS ★
+
+Modifications apportées :
+
+  [FIX GAS — saveBudget() plan_id obligatoire] — Code_GS_TEST.txt
+  - Problème : ligne Budgets sans plan_id comptée dans TOUS les plans
+    → causait un "-10,5€ à assigner" fantôme
+  - Guard ajouté : plan_id obligatoire sur chaque nouvelle entrée Budgets
+  - Vérification : si !period || !category_id → throw Error
+  - Vérification : _getCurrentPlanId() absent → throw Error
+  - Recherche ligne existante filtrée sur (period, category_id, plan_id)
+  - Toute nouvelle ligne : plan_id = currentPlanId toujours renseigné
+
+  [MODAL AJOUT TRANSACTION — Mobile] — index_TEST.Html.txt
+  - Champs agrandis : min-height 56px, font-size 20px
+  - Catégorie + Montant : flex-direction column
+  - Bouton "Ventiler" : pleine largeur, 54px, 19px
+  - Bouton "Déjà sur le relevé" : 60px, 18px
+  - Annuler/Enregistrer : 62px min-height, 20px, bold
+  - Titre modal : 26px | Segment : 17px, padding 12px
+
+  [ONGLET BUDGET — Mobile] — index_TEST.Html.txt
+  CSS @media (max-width:1023px) bloc ~ligne 3779 :
+  - Catégories (.cat-row td) : 28px (puis réduit à 28px final)
+  - Cellule assignée (td:nth-child(2)) : position relative, padding-bottom 44px
+    pour boutons absolus (bcp-trigger + cat-note-btn en bas de cellule)
+  - Input budget (.budget-input) : font-size forcé via JS setProperty('font-size','29px','important')
+    → seule méthode efficace (CSS !important écrasé par règle inconnue)
+  - Dépensé (.amt-spent) : 28px, opacity 0.45
+  - Restant (.amt-avail) : 30px, font-weight 700
+  - vertical-align: top + padding-top: 14px sur amt-spent/amt-avail
+    (compenser la hauteur de la cellule assignée avec boutons absolus)
+  - Bucket header : 22px (puis 24px pour la 1ère colonne)
+  - Total bas : 24px
+  - Calc pad (budgetCalcPad) : min-width 300px, fonts 24-28px
+  - Note popup : min-width 280px, textarea 20px
+  - Boutons bcp-trigger + cat-note-btn : position absolute, bottom 4px, 40×36px
+  - Affichage "—" si valeur = 0 : _fmtBudgetVal(), cat.spent, cat.remaining
+
+  [ONGLET ÉPARGNE — Mobile] — index_TEST.Html.txt
+  CSS @media (max-width:1023px) ~ligne 3702 + JS ~ligne 11892 :
+  - savings-amount-input : 72px → 50px → 34px (font-size final)
+  - Width : 160px conservé
+  - setProperty('font-size','34px','important') en JS post-render
+    (même problème de cascade CSS que budget-input)
+
+  [ONGLET ÉPARGNE — PC compact] — index_TEST.Html.txt
+  CSS @media (min-width:1024px) bloc 5 ~ligne 4032 :
+  - Problème initial : bloc au mauvais endroit (ligne 1438) écrasé par styles de base
+  - Solution : éditer le bon bloc (ligne 4032) avec !important partout
+  - Hero : padding 7px 16px 5px, font-size 22px
+  - hero-label : 9px | hero-amount : 22px | unalloc-amount : 12px
+  - savings-body : padding 6px 10px 50px
+  - Carte projet : padding 6px 10px 5px, margin-bottom 3px
+  - savings-project-name : 11px | target : 9px
+  - savings-amount-input : 13px, width 90px (agrandi pour afficher les centaines)
+  - Slider : 4px height, thumb 12×12px
+  - Footer : margin-top 4px
+  - Section header : 9px
+
+Notes techniques :
+  - RÈGLE CSS : styles de base épargne (~ligne 2790) viennent APRÈS le 1er bloc
+    @media (min-width:1024px) (~ligne 1184) → toujours éditer le bloc 5 (~ligne 4032)
+  - RÈGLE JS setProperty : pour tout input dont le font-size résiste au CSS,
+    appliquer setProperty('font-size', 'Xpx', 'important') après le rendu DOM
+  - Classes réelles budget : .amt-spent / .amt-avail / .amt-neg / .amt-ok / .amt-zero
+    (ne pas utiliser .td-depense / .td-restant qui n'existent pas)
+  - display:flex sur <td> casse le layout table → utiliser position:relative + absolute
+
+--------------------------------------------------------------------------------
+SESSION 19 — 2026-03-25  [Drawer replié PC — badge plan actif]
+--------------------------------------------------------------------------------
+Contexte :
+  Le drawer replié (56px) affichait le select plan comme un champ vide inutilisable.
+  Remplacement par un badge icône avec les initiales du plan actif.
+  Fichier modifié : index_TEST.Html.txt uniquement.
+
+Modifications apportées :
+
+  [HTML] — ~ligne 4769
+  - Ajout <div id="drawerPlanBadge" class="drawer-plan-badge" title=""></div>
+    juste après le #planDrawerSelect
+
+  [CSS] — @media (min-width:1024px) bloc 1, après #planDrawerSelect
+  - #planDrawerSelect : display:none !important quand replié
+  - .drawer.open #planDrawerSelect, .drawer.drawer-pinned #planDrawerSelect :
+    display:block (select visible uniquement quand ouvert/épinglé)
+  - .drawer-plan-badge : 36×36px, border-radius 10px, fond rgba(251,215,47,0.15),
+    border rgba(251,215,47,0.4), texte #FBD72F, font 13px 900, centré, margin auto
+  - .drawer.open .drawer-plan-badge, .drawer.drawer-pinned .drawer-plan-badge :
+    display:none (badge masqué quand ouvert/épinglé)
+
+  [JS] — _renderPlanSelector() ~ligne 5403
+  - Récupération du nom du plan actif (currentName) lors du rendu
+  - Calcul des initiales : 2 mots → première lettre de chacun (ex. "Mon Budget" → "MB")
+    1 mot → 2 premiers caractères (ex. "Principal" → "PR")
+  - badge.textContent = initiales (majuscules)
+  - badge.title = nom complet (tooltip au survol)
+  - Mis à jour à chaque changement de plan via _renderPlanSelector()
+
+Notes :
+  - Le select reste fonctionnel (utilisable quand le drawer est ouvert/épinglé)
+  - Le badge est purement cosmétique/informatif en mode replié
+  - Aucune modification de la largeur du drawer (reste 56px)
+
+--------------------------------------------------------------------------------
+SESSION 20 — 2026-04-14  [Sync données all onglets · Toast "Reste à dépenser" · Historique actions · Graphique · Correction Suivi]
+--------------------------------------------------------------------------------
+Contexte :
+  - Trop d'obligations de recharger la page après mutations → audit complet
+  - Mise en place d'un historique des actions utilisateur (in-memory)
+  - Affichage temps réel du reste à assigner lors de la saisie budget
+  - Graphique donut des dépenses par groupe dans l'onglet Budget
+  - Correction du bug de calcul du solde de départ dans l'onglet Suivi
+  Fichiers modifiés : index_TEST.Html.txt, Code_GS_TEST.txt
+
+Modifications apportées :
+
+  [SYNC DONNÉES — TOUS ONGLETS CONFONDUS] — Code_GS_TEST.txt + index_TEST.Html.txt
+
+  Objectif : garantir que toutes les données restent à jour après n'importe
+  quelle action ayant un impact (TX, budget, épargne, undo), quel que soit
+  l'onglet actif au moment de l'action.
+
+  Architecture du refresh :
+
+  loadBudget(force, silent) — nouveau paramètre "silent"
+    - silent=false (défaut) : comportement normal avec spinner
+    - silent=true : refresh en arrière-plan, sans spinner
+      • Ne render le budget que si l'onglet Budget est visible
+      • Lance toujours la requête GAS et met à jour le cache
+      • Déclenche _checkResteNotif() après chaque refresh
+
+  afterMutation() — refonte du comportement post-mutation TX :
+    Avant : hideSpinner() seulement si budget invisible
+            loadBudget(true) seulement si budget visible (lazy si invisible)
+    Après : hideSpinner() immédiatement (toujours)
+            loadBudget(true, true) toujours (silent) → cache à jour, render si visible
+    → Résultat : après toute TX, le budget est rechargé en arrière-plan.
+      Quand l'utilisateur navigue vers Budget, les données sont déjà fraîches.
+
+  saveBudgetBatch (GAS) : retourne désormais getBudgetByPeriod(period)
+  saveBatchBudget() (frontend) : render direct depuis data retournée (sans 2e call)
+  undoLastAction (GAS) : retourne getBudgetByPeriod(data.period) pour updateBudget*
+  doUndoConfirmed() (frontend) : render direct depuis result.budget.buckets
+
+  [HISTORIQUE DES ACTIONS] — index_TEST.Html.txt
+
+  CSS (~ligne 406) :
+  - .action-history-btn, .action-history-panel, .action-history-header, etc.
+  - Panel fixe 320px à droite, z-index:9999, slide-in/out via translateX
+
+  HTML (~ligne 12795) :
+  - #actionHistoryPanel : panel avec liste + bouton "Effacer l'historique"
+  - #actionHistoryOverlay : fond semi-transparent pour fermer au clic extérieur
+  - Bouton 🕐 Historique ajouté dans la barre budget avant #disponibleCard
+
+  JS (~ligne 7935) :
+  - _actionLog[] (max 50 items, FIFO)
+  - _logAction(icon, text) : ajoute entrée + refresh si panel ouvert
+  - _openActionHistory() / _closeActionHistory() / _clearActionHistory()
+  - _timeAgo(ts) : "à l'instant" / "il y a X min/h/j"
+  - _renderActionHistory() : render HTML du panel
+
+  Hooks _logAction ajoutés sur :
+  - Batch budget save : '💾' "Budget enregistré — N modification(s)"
+  - Undo : '↩️' "Action annulée"
+  - afterMutation : mapping actionLabel → icône (💸 TX, ✏️ modif, 🗑️ suppr, ✅ pointage, 🏦 réconciliation, etc.)
+  - Rollover budget : '🔄' "Report budget : N catégorie(s) de MM/YYYY → MM/YYYY"
+  - Report budget copié : '📅' "Budget copié depuis MM/YYYY — N catégorie(s)"
+  - Transfert simple : '↔️' "Transfert X€ → Destination"
+  - Transfert split : '↔️' "Transfert budget en N destination(s)"
+
+  [TOAST "RESTE À DÉPENSER" — APRÈS SAISIE DE TRANSACTION] — index_TEST.Html.txt
+
+  Objectif : afficher une notification colorée après l'enregistrement d'une
+  dépense, indiquant le budget restant sur la catégorie concernée.
+  4 états : OK (vert) / WARN <20% (orange) / ZERO (gris) / OVER (rouge).
+
+  Flux :
+  1. _doSaveSimpleTx(payload) : si amount > 0 (dépense) → window._lastTxCategoryId = payload.category_id
+  2. _doSaveSplitTx(payload)  : même logique sur lines[0]
+  3. _doUpdateTransaction(form): si amount > 0 → window._lastTxCategoryId = form.category_id
+  4. afterMutation() → loadBudget(true, true) déclenché
+  5. loadBudget success handler → _checkResteNotif(data.buckets)
+  6. _checkResteNotif() → lit _lastTxCategoryId, cherche la cat dans data.buckets,
+     appelle _showResteNotif(cat) et remet _lastTxCategoryId = null
+
+  CSS (#resteNotif) :
+  - position:fixed, bottom:80px, centré horizontalement, z-index:9990
+  - Transition opacity + translateY (apparition en douceur)
+  - .ok = fond vert foncé | .warn = fond orange | .over = rouge | .zero = bleu-gris
+  - .rn-icon (22px) | .rn-cat (nom catégorie) | .rn-amount (montant restant)
+  - .rn-label (texte état : "reste à dépenser", "attention", "dépassement !", etc.)
+
+  JS :
+  - _checkResteNotif(buckets) : lookup catégorie dans les buckets frais
+  - _showResteNotif(cat) : affiche le toast 4.5 secondes
+  - _resteNotifTimer : clearTimeout si nouveau toast avant expiration
+
+  Note : le tooltip #budgetLiveTip (saisie montant budget) reste aussi présent.
+  Il s'agit d'un outil différent : live preview lors de la saisie dans le tableau Budget.
+
+  [GRAPHIQUE DONUT] — index_TEST.Html.txt
+
+  CSS (~ligne 431) :
+  - .budget-chart-section, .budget-chart-toggle, .budget-chart-wrap, #budgetChartCanvas
+  - .budget-chart-legend, .bcl-item, .bcl-dot, .bcl-name, .bcl-pct
+
+  JS (~ligne 6747) :
+  - _toggleBudgetChart() : toggle _chartOpen + classe .open + bouton texte
+  - _drawBudgetChart() : canvas donut 110×110px, dépenses par bucket
+    Palette 10 couleurs, centre "X €", légende top 6 groupes avec %
+    Utilise window._lastBudgetData (déjà stocké par renderBudget)
+  - Bouton "▶ Répartition des dépenses" dans renderBudget après la summaryCard
+  - Appel _drawBudgetChart() après _restoreBucketStates() si _chartOpen
+
+  [CORRECTION SUIVI TRÉSORERIE] — index_TEST.Html.txt (~ligne 12083)
+
+  Bug corrigé : le solde de départ (soldeDep) incluait les prévisions non liées
+  des périodes passées dans son calcul. Or une prévision non clôturée d'une
+  période passée signifie que le revenu n'est jamais arrivé → il ne doit pas
+  compter dans le solde historique.
+
+  Avant : soldeDep += (d.entreeReal + d.entreePrev) - (d.sortieReal + d.sortiePrev)
+  Après : soldeDep += d.entreeReal - d.sortieReal  (réel uniquement)
+
+  Impact : le solde de départ est désormais fidèle aux mouvements réels,
+  et non gonflé/dégonflé par des attentes non concrétisées.
+
+Notes techniques :
+  - _logAction est défini avant son premier appel (dans saveBatchBudget qui est
+    appelé interactivement, pas au chargement) → pas de problème d'ordre
+  - Le tooltip #budgetLiveTip utilise position:fixed → pas affecté par le scroll
+  - Le donut canvas est recréé à chaque renderBudget si _chartOpen = true
+  - Le fallback loadBudget(true) est conservé partout en cas de réponse GAS incomplète
+  - formatEuro() est disponible globalement pour le log transfert
+
+--------------------------------------------------------------------------------
+SESSION 21 — 2026-04-14  [Bug spinner modif TX · Segment editModal · Notif multi-ligne · Suivi budget]
+--------------------------------------------------------------------------------
+Contexte :
+  Suite de la session 20. Correction de bugs signalés + finalisation des 5 corrections
+  en cours (reprises depuis le résumé de contexte).
+  Fichiers modifiés : index_TEST.Html.txt
+
+Modifications apportées :
+
+  [BUG] Spinner infini lors de modification de transaction (Banque)
+    _doUpdateTransaction() success handler : ajout null guard sur result
+    Avant : if (result && result.error === "locked") → crash silencieux si result=null
+    Après : if (!result) { hideSpinner(); return; }
+    Cause : si GAS retourne null ou si une exception est levée dans le callback,
+    la chaîne était interrompue sans appeler hideSpinner() → spinner bloqué.
+
+  [BUG] Segment ↑Dépense / ↓Revenu / ⏳Attendu invisible dans editModal
+    CSS mobile (~ligne 3515) : ajout règles #editModal .segment et .segment button
+      → même taille que #addModal (font-size 20px, padding 14px 8px)
+    CSS desktop (~ligne 4021) : ajout #editModal .segment button
+      → compact (font-size 13px, padding 8px 6px)
+
+  [NOTIF] Reste à dépenser — passage en liste multi-lignes
+    CSS (~ligne 425) : refonte #resteNotif → flex-direction:column, fond #1a1a2e
+    CSS : ajout .rn-row avec variantes .ok/.warn/.over/.zero par ligne
+    HTML (#resteNotif ~ligne 12918) : remplacé structure icon+body unique
+      par <div id="resteNotifList"></div> — JS _showResteNotifList() peut maintenant
+      injecter les lignes (getElementById('resteNotifList') ne retourne plus null)
+
+  [SUIVI] Calcul sorties mois courant via _budgetCatDetails
+    renderSuiviTable() : pour la période courante uniquement,
+    si window._budgetCatDetails est disponible et correspond à currentPeriod,
+    les "sorties à venir" sont calculées depuis le budget restant par catégorie
+    (sum max(0, remaining)) plutôt que depuis les prévisions de sorties.
+    → soldeFin du mois courant correspond maintenant à updateProjection()
+    → Label "dont X budget restant" (vs "dont X à dépenser" pour les mois futurs)
+
+--------------------------------------------------------------------------------
+SESSION 22 — 2026-04-15  [Historique Budget · Suivi chaîne soldes · File d'attente]
+--------------------------------------------------------------------------------
+Contexte :
+  Suite session 21. 3 corrections :
+  1. Bouton Historique déplacé dans la barre d'actions Budget (avec RAZ)
+  2. Suivi trésorerie : chaîne soldeFin → soldeDep rendue explicite + colonne ajoutée
+  3. File d'attente : bug critique de non-mise à jour après soumission
+  Fichiers modifiés : index_TEST.Html.txt, Code_GS_TEST.txt
+
+Modifications apportées :
+
+  [FIX — Bouton Historique Budget]
+  Déplacement du bouton 🕐 "Historique" :
+    Avant : dans .budget-period-bar (entre ← › Mois en cours et À assigner)
+    Après : dans .budget-action-bar (avant le bouton 🗑 RAZ)
+  HTML : <button class="action-history-btn"> avec <span class="btn-fold-txt">Historique</span>
+    → texte "Historique" visible sur desktop (btn-fold-txt display:inline sur PC)
+    → icône seule sur mobile (btn-fold-txt masqué)
+  CSS desktop compact (bloc 5) : .budget-action-bar .action-history-btn
+    height 26px, padding 0 8px, font 11px, border-radius 5px — aligné avec RAZ
+  CSS mobile : couvert par .budget-action-bar button (déjà 22px, 64px min-height)
+
+  [FIX — Suivi trésorerie : colonne "Solde début" + chaîne soldeFin→soldeDep]
+  Calcul : const soldeDep_row = solde (= soldeFin de la période précédente)
+    → net du mois courant : net = soldeFin - soldeDep_row (pas soldeDep global)
+    → Correction commentaire "net total depuis début" → "net de la période courante"
+  Affichage : nouvelle colonne "Solde début" dans le tableau Suivi
+    → Période | Solde début | Entrées | Sorties | Net | Solde fin
+    → Solde début de chaque ligne = Solde fin de la ligne précédente (chaîne visible)
+    → Ligne "Solde de départ" : colspan 4 → couvre les 4 colonnes centrales
+    → Solde début affiché en 13px opacity 0.8 (discret, informatif)
+  Résultat : la continuité du calcul de période en période est désormais explicite
+
+  [BUG CRITIQUE — File d'attente : pas de mise à jour après soumission]
+  Cause : addBatchTransactions (GAS) retournait les transactions sans _safeReturnTx()
+    → Dates GAS non sérialisées en ISO string → _normalizeTxList() plantait côté frontend
+    → afterMutation() jamais appelé → Banque, Suivi, Budget non mis à jour
+    → Seul rechargement page ou bouton ↺ Actualiser permettait de voir les nouvelles TX
+  Fix GAS (Code_GS_TEST.txt) :
+    const transactions = _safeReturnTx(_getAllTransactions(categories));
+    const previsions   = JSON.parse(JSON.stringify(_getAllPrevisions(categories)));
+    return { transactions, previsions };
+  Fix complémentaire (index_TEST.Html.txt — afterMutation) :
+    Ajout appel explicite renderSuiviTable() si onglet Suivi visible :
+    try { const _sv = document.getElementById("suiviSection");
+          if (_sv && _sv.style.display !== "none") renderSuiviTable(); } catch(e) {}
+
+Notes :
+  - Le bouton Historique dans la Banque (ligne 4435) est inchangé (dans history-toolbar)
+  - _safeReturnTx était déjà utilisé dans addTransaction et addSplitTransaction
+    → addBatchTransactions était la seule fonction de mutation sans cette sécurité
+  - renderSuiviTable() dans afterMutation : protégé par try/catch pour éviter régression
+
+Validation (tests à effectuer) :
+  [ ] Historique Budget PC : bouton 🕐 Historique visible dans la barre d'actions (avec RAZ)
+  [ ] Historique Budget mobile : icône seule, même taille que les autres boutons
+  [ ] Historique Budget : clic → panel s'ouvre correctement
+  [ ] Suivi : tableau a 6 colonnes (Période·Solde début·Entrées·Sorties·Net·Solde fin)
+  [ ] Suivi : Solde début de N+1 = Solde fin de N (vérifier à la main sur 2 périodes)
+  [ ] Suivi : ligne "Solde de départ" s'affiche correctement (colspan couvre colonnes centrales)
+  [ ] File d'attente : soumettre 1 TX → Banque se met à jour SANS rechargement page
+  [ ] File d'attente : Budget (À assigner) se met à jour SANS rechargement page
+  [ ] File d'attente : Suivi se met à jour SANS rechargement page
+  [x] File d'attente split : même comportement avec une TX ventilée
+
+SESSION 22b — 2026-04-15  [Notif "Reste à dépenser" — période incorrecte]
+  Bug : la notif utilisait le cache budget de la période AFFICHÉE dans l'onglet Budget,
+        pas la période de la transaction saisie. Si Budget Tab = mars et TX = avril → faux.
+
+  Architecture corrigée :
+  1. Capture window._lastTxPeriod dans les 3 points de sauvegarde :
+       - _doSaveSimpleTx : _normalizePeriodKey(payload.date)
+       - _doSaveSplitTx  : _normalizePeriodKey(l.date) (première ligne dépense)
+       - submitQueue      : _normalizePeriodKey(item.form.date) + reset null au départ
+  2. _checkResteNotifLocal() : guard période ajouté
+       - Si txPer ≠ budgetCatPeriod → return SANS vider les IDs (chemin GAS prend le relais)
+       - Si même période → chemin rapide inchangé (cache local − delta)
+  3. _checkResteNotif(buckets, period) : implémenté (était un no-op vide)
+       - Données GAS fraîches post-TX → pas de delta à soustraire
+       - Vérifie que period === _lastTxPeriod avant d'afficher
+       - Vide IDs + _lastTxPeriod après affichage
+  4. loadBudget success handler : _checkResteNotif(data.buckets, period) — period passé
+  5. afterMutation : fallback GAS si txPeriod ≠ budgetTabPeriod
+       - Appel google.script.run.getBudgetByPeriod(_txNotifPer)
+       - Success → _checkResteNotif(data.buckets, _txNotifPer) → notif correcte
+       - _txNotifPer capturé en closure (pas de race condition)
+
+  Validation :
+  [ ] Saisir TX pour le mois courant, Budget Tab sur le même mois → notif affichée ✓
+  [ ] Saisir TX pour le mois courant, Budget Tab sur un autre mois → notif affichée ✓
+  [ ] Saisir TX antidatée (mois précédent), Budget Tab sur le mois courant → notif correcte
+  [ ] Aucune notif si catégorie non budgétée (budgeted=0 et remaining=0)
+
+SESSION 22c — 2026-04-15  [Notif mobile + Suivi revenus attendus + colonne Économisé]
+  Fichier modifié : index_TEST.Html.txt
+
+  [BUG NOTIF — IDs vidés avant le check de cache]
+  Cause : dans _checkResteNotifLocal(), les IDs étaient vidés AVANT de vérifier
+          _budgetCatDetails. Si le cache était vide (mobile, budget tab jamais ouvert) →
+          IDs perdus, chemin GAS ne pouvait pas prendre le relais → aucune notif sur mobile.
+  Fix : déplacement du vidage IDs/amounts/period APRÈS le guard "if (!details) return".
+        Quand cache absent → IDs conservés → chemin GAS les récupère.
+
+  [BUG NOTIF — Fallback GAS conditionnel seulement sur mismatch de période]
+  Cause : le fallback getBudgetByPeriod n'était déclenché que si txPeriod ≠ budgetTabPeriod.
+          Si même période mais cache vide → aucun fallback, IDs perdus.
+  Fix : suppression de la condition _txNotifPer !== _budgetTabPer → fallback déclenché
+        dès que les IDs sont encore présents (cache vide OU période différente).
+  Résultat : 2 chemins selon contexte :
+    - Cache dispo + bonne période → notif immédiate (pas de GAS extra) ✓
+    - Cache absent OU mauvaise période → getBudgetByPeriod → notif après 1-2s ✓
+
+  [BUG SUIVI — Prévisions classées comme sorties au lieu de revenus]
+  Cause : addPrevision GAS stocke les montants en valeur absolue (Math.abs).
+          Le code renderSuiviTable testait "if (amt < 0)" pour détecter les revenus
+          → ne se déclenchait jamais → TOUTES les prévisions allaient dans sortiePrev.
+  Fix : les prévisions WIMM sont exclusivement des revenus attendus (argent à recevoir).
+        Nouveau code : addPrevPeriod(p, amt, 0) — directement dans entreePrev.
+  Impact : soldeFin des périodes futures désormais correct (revenus attendus additionnés,
+           non plus soustraits).
+
+  [FEATURE SUIVI — Colonne "📈 Économisé" (enrichissement théorique cumulé)]
+  Nouvelle colonne (7e) dans le tableau Suivi :
+    Économisé cumulé = soldeFin(période) − soldeDep_initial (historique)
+    → représente le gain théorique cumulé vs le point de départ
+    → positif (violet #a78bfa) = capital en hausse
+    → négatif (rouge) = on puise dans les réserves
+    → neutre (text-muted) = à l'équilibre
+  Colspan "Solde de départ" : 4 → 5 pour couvrir les 5 colonnes centrales
+  Note de bas de tableau mise à jour avec description de la colonne
+
+  Validation :
+  [ ] Mobile : saisir une dépense → notif "reste à dépenser" apparaît (même sans Budget tab ouvert)
+  [ ] PC cache vide : même comportement
+  [ ] PC cache dispo : notif immédiate (< 0.5s)
+  [ ] Suivi : vérifier que les revenus attendus apparaissent dans la colonne Entrées (pas Sorties)
+  [ ] Suivi : colonne Économisé = soldeFin − soldeDep initial (vérifier à la main)
+  [ ] Suivi : periode future avec revenu attendu → soldeFin augmente (pas diminue)
+
+SESSION 23 — 2026-04-15  [Notif grosse + rapide | Suivi Économisé épargne | Graphique → Suivi]
+  Fichier modifié : index_TEST.Html.txt
+
+  [UI — Notif "Reste à dépenser" plus grosse]
+  Augmentation des tailles dans le CSS :
+    #resteNotif : min-width 260→310px, padding 10/12→12/14px, gap 6→8px, border-radius 14→16px
+    .rn-row     : padding 8/10→12/14px, gap 10→12px, border-radius 10→12px
+    .rn-icon    : font-size 18→24px
+    .rn-cat     : font-size 12→14px
+    .rn-amount  : font-size 16→20px
+
+  [PERF — Notif "Reste à dépenser" instantanée (avant réponse GAS)]
+  Nouvelle fonction _checkResteNotifOptimistic() :
+    - Identique à _checkResteNotifLocal MAIS ne vide pas les IDs
+    - Appelée immédiatement au moment du clic Enregistrer (avant google.script.run)
+    - Si cache local dispo + bonne période → notif affichée en <50ms
+    - afterMutation rafraîchira ensuite avec les données fraîches GAS
+  Appelée dans : _doSaveSimpleTx, _doSaveSplitTx, submitQueue
+  Résultat : notif visible instantanément dès le clic, pas après 2-3s de GAS
+
+  [FIX SUIVI — Colonne "📈 Économisé" = cumul catégorie Épargne]
+  Ancienne logique (fausse) : Économisé = soldeFin − soldeDep_initial
+  Nouvelle logique : cumul des transactions réelles + prévisions en attente
+    dont la catégorie contient "épargn", "économi" ou "saving" (regex case-insensitive).
+  Calcul :
+    1. Identifier les category_id épargne dans allCategories par regex
+    2. Sommer les transactions (Math.abs) de ces catégories par période → _savingsByPeriod
+    3. Ajouter les prévisions non liées des mêmes catégories → _savingsByPeriod
+    4. Pré-cumuler les périodes passées → _savingsCumul initial
+    5. Incrémenter _savingsCumul à chaque ligne du tableau (période courante + futures)
+  Colonne : violet si > 0, rouge si < 0, toujours cumulatif
+  Légende mise à jour : "cumul des versements vers la catégorie Épargne/Économies"
+
+  [FEATURE — Graphique dépenses déplacé dans sous-onglet Suivi]
+  Onglet Budget : suppression de la section graphique (bouton toggle + canvas + légende)
+    → plus de création dynamique _chartSec dans loadBudget
+  Onglet Suivi : nouveau sous-tab "🍩 Graphique"
+    → canvas id="budgetChartCanvas" + div id="budgetChartLegend" en HTML statique
+    → _drawBudgetChart() utilise les mêmes IDs, aucun changement dans la fonction
+    → le canvas est visible immédiatement quand l'onglet est actif
+  Structure Suivi (2 sous-onglets) :
+    - 📊 Trésorerie : tableau par période (comportement identique, actif par défaut)
+    - 🍩 Graphique  : donut dépenses par groupe (même données _lastBudgetData)
+  Nouvelle fonction _showSuiviTab(tab) :
+    - Bascule visibilité des divs suiviTabTreso / suiviTabGraph
+    - Met à jour les styles des boutons (primary ↔ segment)
+    - 'graph' → setTimeout(_drawBudgetChart, 80) pour attendre visibilité canvas
+    - 'treso' → renderSuiviTable()
+
+  Validation :
+  [ ] Notif : vérifier taille agrandie sur mobile et PC
+  [ ] Notif : apparaît immédiatement au clic (avant spinner GAS)
+  [ ] Notif : se rafraîchit avec données fraîches 2-3s après (pas de doublon gênant)
+  [ ] Suivi → Trésorerie : colonne Économisé affiche cumul épargne (pas enrichissement général)
+  [ ] Suivi → Trésorerie : si aucune catégorie "épargne" → colonne affiche 0
+  [ ] Suivi → Graphique : onglet s'affiche, donut se dessine correctement
+  [ ] Suivi → Graphique : switch tréso ↔ graphique fluide, boutons actifs corrects
+  [ ] Budget : plus de bouton "Répartition des dépenses" dans l'onglet Budget
+
+SESSION 23b — 2026-04-15  [Fix calculs Suivi + Tableau de bord complet]
+  Fichier modifié : index_TEST.Html.txt
+
+  [FIX CRITIQUE — Calculs Suivi Trésorerie incohérents]
+  Cause : la période courante utilisait _lastProjectionValue (calculé dans updateProjection
+          depuis soldePrev = TOUTES les transactions) comme soldeFin, mais les colonnes
+          Entrées/Sorties étaient calculées séparément → Net ≠ Entrées − Sorties affiché.
+  Fix   : suppression du chemin spécial "isCurrent + _lastProjectionValue".
+          Algorithme uniforme pour toutes les périodes (courante + futures) :
+            totalEntrees = entreeReal + entreePrev
+            totalSorties = sortieReal + (si mois courant + cache budget : resteADepenser,
+                                          sinon : sortiePrev)
+            net = totalEntrees − totalSorties
+            soldeFin = soldeDep_row + net
+          → colonnes 100% cohérentes, soldeDep_row chaîné correctement
+
+  [RENAME — Onglet "Graphique" → "Tableau de bord"]
+  Bouton sous-onglet renommé : 🍩 Graphique → 📋 Tableau de bord
+
+  [FEATURE — Tableau de bord complet (PC-first)]
+  Nouveau sous-onglet "Tableau de bord" dans Suivi.
+  Structure :
+    Barre période : Ce mois / Mois préc. / 3 mois / 6 mois / 12 mois / Tout
+                    → recalcule tous les KPIs instantanément (zéro GAS)
+    KPI Row 1 (4 cartes, mois sélectionné) :
+      💰 Revenus    → liste des revenus au clic
+      💸 Dépenses   → répartition par groupe (barres %) au clic
+      📊 Budget utilisé → barres par catégorie au clic (nécessite cache budget)
+      🎯 Taux épargne → transactions épargne de la période au clic
+    KPI Row 2 (4 cartes, toutes périodes) :
+      🐖 Total épargné       → timeline mensuelle des versements épargne au clic
+      📈 Taux moyen 12m      → barres horizontales taux par mois au clic
+      🏆 Meilleur mois       → top 5 mois d'épargne (médailles) au clic
+      📅 Mois de suivi       → résumé utilisation (premier/dernier mois, nb TX) au clic
+    Panneau détail : s'ouvre sous les KPIs, referme si on reclique la même carte
+    Donut dépenses :
+      Clic sur segment ou légende → détail catégories du groupe (inline sous le donut)
+      Détection arc par géométrie canvas (atan2)
+    Bar chart 6 mois :
+      Barres groupées revenus (vert) + dépenses (rouge) par mois
+      Ligne pointillée violette = net mensuel (axe centré sur 0)
+      Labels mois (MM/AA) en bas
+  Performance : zéro appel GAS, recalcul O(n) sur allTransactions en <5ms
+  Architecture : shell HTML buildé une seule fois (dataset.dbReady),
+                 _dbRefresh() recalcule à chaque activation de l'onglet
+
+  Fonctions ajoutées :
+    renderDashboard(), _dbShellHtml(), _dbRefresh(), _dbCurrentPeriod(),
+    _dbParseKey(), _dbGetPeriodSet(), _dbGetSavingsIds(), _dbComputeAll(),
+    _dbRenderKpis(), _dbCloseDetail(), _dbShowDetail(), _dbGetBucketForCat(),
+    _dbRenderDonut(), _dbDonutClick(), _dbDonutDetailClose(), _dbRenderBarChart()
+
+  Validation :
+  [ ] Tableau suivi : vérifier que Entrées − Sorties = Net affiché (toutes lignes)
+  [ ] Tableau suivi : soldeFin mois N = Solde début mois N+1 ✓
+  [ ] Dashboard : 8 KPIs s'affichent avec valeurs correctes
+  [ ] Dashboard : clic sur chaque KPI ouvre le bon panneau de détail
+  [ ] Dashboard : donut s'affiche, clic segment ouvre catégories
+  [ ] Dashboard : bar chart 6 mois s'affiche avec ligne net
+  [ ] Dashboard : filtre période change tous les KPIs + donut
+  [ ] Dashboard : taux épargne nécessite catégorie nommée "épargne/économie/saving"
+
+
+
+--------------------------------------------------------------------------------
+SESSION 24 -- 2026-04-16  [Dashboard : tooltips, signe epargne, budget, solde previsionnel]
+--------------------------------------------------------------------------------
+Contexte :
+  Corrections et ameliorations du tableau de bord (Suivi > Tableau de bord).
+  Aucune modification du backend GAS.
+  Fichier modifie : index_TEST.Html.txt
+
+[FIX -- Signe epargne incohÃ©rent]
+  Avant  : savingsFiltered / byMonth.sav utilisaient Math.abs() (ignorait retraits epargne)
+  Avant  : totalEpargne recalcule cote client avec filtre amount > 0 seulement
+  Apres  : savingsFiltered / byMonth.sav = somme directe (logique GAS : depots + retraits)
+  Apres  : totalEpargne = _totalSavings directement (valeur GAS, toujours a jour)
+  Raison : _recomputeSavingsFromTx() dans WIMM utilise une somme directe --
+           le client doit etre coherent avec cette logique de reference.
+
+[FIX -- Budget ne remontait pas dans le dashboard]
+  Cause 1 : loadBudget(silent=true) ne stockait _budgetCatDetails QUE si
+            renderBudget() etait appele (condition : !silent || budgetVisible).
+            Si dashboard ouvert sans jamais avoir visite l'onglet Budget =>
+            _budgetCatDetails toujours null.
+  Fix     : dans le success handler de loadBudget, stocker TOUJOURS
+            window._lastBudgetData, window._budgetCatDetails, window._budgetCatPeriod
+            avant le if (!silent || budgetVisible).
+  Cause 2 : auto-trigger loadBudget(true, true) echouait si periodSelect vide
+            (Budget jamais ouvert => DOM select sans valeur => loadBudget return early).
+  Fix     : dans _dbComputeAll, si _bdCats null => buildPeriodSelect(allPeriods)
+            si select vide, puis loadBudget(true, true).
+  Fix 3   : apres loadBudget success, si Suivi visible et dashboard actif =>
+            appel renderDashboard() pour rafraichir avec les donnees recues.
+
+[FEATURE -- Filtres periode deplaces sous les KPIs]
+  Avant  : filtres periode en haut de la page dashboard
+  Apres  : KPIs en haut > filtres periode > graphiques
+  Label "Graphiques :" ajoute pour clarifier que les filtres ne s'appliquent
+  qu'aux graphiques (pas aux KPIs row 1).
+
+[FEATURE -- KPIs row 1 fixes sur le mois en cours]
+  Total depenses, Total budget, Ecart dep. vs budget : toujours calcules
+  sur le mois courant (_curPeriod), independamment du filtre graphiques.
+  Nouvelles variables : depensesKpi, revenusKpi (depuis txCurMonth).
+  Sous-titre "mois en cours" ajoute sur les 3 KPIs.
+
+[FEATURE -- Report M-1 (cat.carry) dans le KPI budget]
+  reportTotal = sum(cat.carry) sur _budgetCatDetails.
+  cat.carry > 0 = surplus M-1 (augmente capacite), < 0 = deficit (reduit).
+  Affichage : "250 EUR *" avec sous-titre "* dont +50 EUR report M-1".
+  Capacite reelle = budgetTotal + reportTotal.
+  ecartDepBudget = depensesKpi - (budgetTotal + reportTotal).
+  Question ouverte : depensesKpi inclut les depots epargne (amount > 0) --
+  coherent car budgetTotal inclut aussi le budget epargne, les deux se compensent.
+
+[FEATURE -- KPI Solde previsionnel (remplace Mois de suivi)]
+  Nouvelle carte kpi-solde : solde previsionnell = sum(-(t.amount)) toutes TX.
+  Formule identique a updateProjection() : val = -(amount).
+  Couleur : vert si >= 0, rouge si < 0.
+  Panneau detail au clic : 3 colonnes (Pointe / Non pointe / Previsionnel).
+
+[FEATURE -- Tooltips hover sur graphiques canvas]
+  Donut (depenses par groupe) :
+    - onmousemove => detecte la tranche (atan2 + distance)
+    - Tooltip : couleur + nom + montant + pourcentage
+  Barres categories :
+    - onmousemove => detecte la ligne par coordonnee Y
+    - Tooltip : couleur + nom + montant
+  Tooltip div#dbTooltip : position fixed, border var(--primary), fond var(--sheet).
+  onmouseleave => masque le tooltip.
+
+[FEATURE -- Couleur primaire du theme dans les palettes canvas]
+  Avant  : palette codee en dur (['#6366F1', ...])
+  Apres  : premiere couleur = getComputedStyle(body).getPropertyValue('--primary')
+  => la couleur dominante des graphiques suit le theme actif
+     (or theme-dark, vert theme-zen, indigo theme-fintech).
+
+[FEATURE -- Date DD/MM dans le detail des transactions]
+  Dans _dbShowChartDetail(), chaque ligne de transaction affiche maintenant
+  la date en format DD/MM en haut a droite (colonne droite).
+  Nom de categorie en dessous en plus petit (opacity 0.7).
+  Compatible formats DD/MM/YYYY et YYYY-MM-DD (auto-detection).
+
+Notes techniques :
+  - _budgetCatDetails stocke INDEPENDAMMENT de renderBudget() desormais.
+  - depensesKpi inclut les depots epargne (montants positifs en categorie epargne).
+    Coherent car budgetCapacity inclut le budget de la categorie epargne.
+    Decision user a prendre : exclure epargne des "depenses" ou garder tel quel.
+  - Solde previsionnel = solde Banque affichage onglet Banque (pointe + non-pointe).
+    N'inclut PAS les previsionnels de revenus attendus (contrairement a updateProjection).
+--------------------------------------------------------------------------------
+SESSION 25 — 2026-04-16  [Audit sens des budgets · Fixes budget négatif · MAJ suivi + spec]
+--------------------------------------------------------------------------------
+Contexte :
+  Reprise après compaction de contexte (conv précédente perdue).
+  Audit complet de la cohérence des signes dans le calcul budget (GAS + frontend).
+  Cas réel : catégorie "Economies 💰" a budgeted = -7,24 en avril (résultat de
+  transferts — valeur nette négative légitime, pas une erreur utilisateur).
+  Le système affichait cela comme un dépassement rouge → à corriger.
+  Mise à jour de SUIVI_MODIFICATIONS.txt et MEMORY.md.
+  Fichiers lus : Code_GS_TEST.txt, index_TEST.Html.txt, SUIVI_MODIFICATIONS.txt
+
+ANALYSE — Sens des budgets (convention de signes)
+
+  Convention générale WIMM :
+    - En base (feuille Banque/Transactions) :
+        dépense = amount POSITIF
+        revenu  = amount NÉGATIF
+    - Affichage onglet Banque : val = -amount (inversion)
+    - Affichage onglet Budget : PAS d'inversion — valeurs en "€ positifs"
+
+  Résultats de l'audit GAS (getBudgetByPeriod) :
+
+    budgeted  → montant alloué par l'utilisateur (toujours positif)        ✅ CORRECT
+    spent     → parseAmount(amount) = somme directe (dépenses = positif)   ✅ CORRECT
+    carry     → budgeted_passé − spent_passé (surplus cumulatif)            ✅ CORRECT
+    remaining → budgeted − spent + carry (positif = reste dispo)            ✅ CORRECT
+    disponible → −cumulEntrees_catAssigner − totalAssigné                   ✅ CORRECT
+                 (negate explicite commenté ligne ~1161 : "Revenus = amounts
+                  négatifs dans WIMM ; negate pour avoir le montant réel")
+
+  Résultats de l'audit frontend (renderBudget) :
+    formatEuro(cat.spent)     → affichage direct, sans inversion → ✅ CORRECT
+    formatEuro(cat.remaining) → affichage direct, sans inversion → ✅ CORRECT
+    cat.budgeted affiché via _fmtBudgetVal() (identique, sans inversion)    ✅
+    Couleurs : remaining < 0 → rouge (amt-neg), > 20% budget → vert (amt-ok) ✅
+
+  ⚠️ INCONSISTANCE DÉTECTÉE — rolloverBudget vs getBudgetByPeriod :
+    rolloverBudget (ligne ~1855) :
+      spent[cat] += Math.abs(Number(r[txAmtIdx]))   ← utilise Math.abs()
+    getBudgetByPeriod (ligne ~1268) :
+      catMap[cId].spent += parseAmount(allTrans[i][atAmountIdx])  ← valeur brute
+    Impact : si une catégorie reçoit des transactions de type revenu (remboursements,
+    amount négatif), le carry calculé par rolloverBudget sera différent de celui
+    calculé par getBudgetByPeriod.
+    Pratique actuelle : catégories de dépenses pures → pas d'impact observable.
+    Dette technique à corriger si remboursements classés dans des catégories budget.
+
+  Note épargne :
+    _totalSavings (onglet Épargne) = somme DIRECTE des amount catégorie Épargne
+    Dépôt épargne = amount positif → totalSavings augmente ✅
+    Retrait épargne = amount négatif (GAS : row.amount = -amt) → totalSavings diminue ✅
+    Exception documentée à la règle "val = -amount" pour cet usage précis.
+
+Résumé : la convention est globalement CORRECTE et COHÉRENTE.
+  La seule anomalie est l'usage de Math.abs() dans rolloverBudget vs parseAmount brut
+  dans getBudgetByPeriod. À surveiller si des remboursements entrent dans des catégories.
+
+Modifications de code apportées (index_TEST.Html.txt) :
+
+  FIX 1 — Lignes catégorie dans renderBudget (ligne ~7686)
+    Problème : `remaining < 0` classé comme dépassement même si `budgeted <= 0`
+    Solution : ajout de `_budgetNegatif = _bud <= 0`
+      - `isOver = !_budgetNegatif && _rem < 0`
+      - `availClass` : si budget négatif → "amt-zero" (neutre) au lieu de "amt-neg"
+      - `catRow.dataset.isOver` : positionné à "0" si budget négatif intentionnel
+        (cohérent avec filtre "⚠️ dépassements" qui lit `data-is-over`)
+      - Barre de progression : `_pct = 0` si budget négatif (pas de barre rouge)
+      - Couleur barre : rouge uniquement si vrai dépassement
+
+  FIX 2 — En-tête bucket dans renderBudget (ligne ~7658)
+    Problème : si `totalAssigned <= 0` pour un bucket entier (ex: bucket Saving),
+    le `totalRemaining < 0` déclenchait "amt-neg" rouge sur l'en-tête.
+    Solution : ajout de `_bucketNegatif = _bTot <= 0`
+      - `availClass` : neutre si bucket budget négatif, rouge uniquement si vrai dépassement
+
+  FIX 3 — Alerte dépassements en bas de renderBudget (ligne ~7799)
+    Problème : l'alerte "N catégorie(s) en dépassement" incluait les catégories
+    à budget intentionnellement négatif (ex: Economies 💰 avec budgeted = -7,24).
+    Solution : guard `if (_bud <= 0) return;` avant de tester `_rem < 0`
+
+--------------------------------------------------------------------------------
+SESSION 26 — 2026-04-16  [Dashboard complet : KPIs, graphiques, mobile]
+--------------------------------------------------------------------------------
+Contexte :
+  Refonte complète du Tableau de bord (Suivi > Tableau de bord).
+  Objectif : KPIs cohérents hors épargne, graphiques nets, layout mobile fonctionnel.
+  Suite directe de la S25. Aucune modification GAS.
+  Fichier modifié : index_TEST.Html.txt uniquement.
+
+Modifications apportées :
+
+  [KPIs — Refonte logique hors épargne]
+  7 KPIs sur 2 lignes (4+3 desktop, 2+2+3 mobile) :
+    Row 1 : Total sorties | Total entrées | Économies nettes | Total net
+    Row 2 : Total budget  | Écart budget/réel | Solde prévisionnel
+  Convention de signes :
+    - sortiesKpi  = sum(amount > 0) hors cat épargne (dépenses réelles)
+    - entreesKpi  = sum(|amount|) pour amount < 0 hors cat épargne (revenus + remboursements)
+    - econNetKpi  = somme directe cat épargne (dépôt=+, retrait=−, convention WIMM)
+    - totalNetKpi = sortiesKpi − entreesKpi + econNetKpi
+  Toujours calculés sur le mois courant (indépendant du filtre graphiques).
+  Row 3 masquée sur desktop (7 KPIs = 4+3, pas besoin de 3e ligne).
+
+  [GRAPHIQUES — Donut + Cat chart : net hors épargne]
+  Donut (dépenses par groupe) :
+    - Agrège par bucket : amount nets (dépenses − remboursements) hors cat épargne
+    - Exclut "To Assign" et CAT001
+    - Segments négatifs (remboursements > dépenses dans un bucket) filtrés (non affichés)
+    - Total donut cohérent avec KPI "Total sorties" (même logique de signe)
+  Cat chart (dépenses par catégorie) :
+    - Même logique net : items nets positifs seulement
+    - Exclut cat épargne, To Assign, CAT001
+    - Top 12 desktop / top 7 mobile
+
+  [GRAPHIQUE — Budget vs Dépensé (nouveau)]
+  Graphique horizontal par catégorie (mois en cours uniquement) :
+    - Source : window._lastBudgetData (reconstruit avec bucket_name par cat)
+    - Barre grise : budget alloué + carry (capacité totale)
+    - Barre colorée : dépensé — vert si dans le budget, rouge si dépassement
+    - Ligne verticale marquant la limite budget par catégorie
+    - Montants "dépensé / budget" à droite de chaque ligne
+    - Top 18 desktop / top 8 mobile
+    - Tooltip au survol : nom, bucket, budget (avec report si applicable), dépensé, reste/dépassement
+  Cross-filtering :
+    - Filtre bucket actif → montre seulement les cats du bucket
+    - Filtre catégorie actif → dim les autres lignes
+    - Clic sur une barre → cross-filter catégorie (filtre donut + cat chart)
+
+  [GRAPHIQUE — Courbe épargne cumulée (remplace Évolution 6 mois)]
+  Courbe mensuelle cumulative des transactions en catégories épargne :
+    - Aire remplie sous la courbe (couleur primaire theme à 15% opacity)
+    - Points cliquables, tooltip avec cumul + versement du mois
+    - Axe X : labels mois, step adaptatif selon nombre de mois
+    - H=200px, DPR fix, 12 mois max
+  Ordre final des graphiques : Budget vs Dépensé → Courbe épargne (épargne en dernier)
+
+  [CROSS-FILTERING Power BI style]
+  Filtre croisé entre Donut, Cat chart et Budget chart :
+    - Clic donut (bucket) → cat chart et budget chart filtrés sur ce bucket
+    - Clic cat chart (catégorie) → donut dim les autres buckets, budget chart dim les autres cats
+    - Clic budget chart (catégorie) → filtre catégorie sur donut + cat chart
+    - Badge filtre avec bouton ✕ pour réinitialiser
+    - Panneau détail transactions de la sélection
+
+  [FIX — Hit-test DPR sur donut]
+  Bug : canvas.width/rect.width = dpr → coordonnées souris multipliées par DPR
+    → hit-test décalé vers le bas/droite sur Retina/zoom navigateur
+  Fix : utiliser cssSize/rect.width (= 1 en conditions normales, adaptatif sinon)
+  Fix identique appliqué sur cat chart (scaleY → H/rect.height) en session précédente.
+
+  [FIX — Hit-test DPR sur cat chart (rappel session précédente)]
+  var localY = (e.clientY - rect.top) * (H / rect.height) — au lieu de canvas.height/rect.height
+
+  [DPR FIX — Tous les canvas]
+  Tous les canvas dashboard utilisent le pattern :
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.scale(dpr, dpr); → draw en coordonnées CSS
+
+  [PERFORMANCE — Pré-chargement budget au démarrage]
+  Si l'onglet de démarrage n'est pas Budget, un loadBudget(true, true) silencieux
+  est déclenché 1,2s après le splash → budget déjà en cache quand l'utilisateur arrive
+  sur Suivi → dashboard instantané dès la 1ère visite.
+
+  [AUTO-REFRESH — Dashboard après mutation TX]
+  afterMutation() : si Suivi est visible ET que le sous-onglet Tableau de bord est actif
+    → renderDashboard() appelé automatiquement après chaque ajout/modif/suppression TX
+  Avant : seul renderSuiviTable() était appelé dans afterMutation.
+
+  [MOBILE — Layout Tableau de bord]
+  Breakpoint < 1024px :
+    - Filtres période : scroll horizontal (flex-wrap:nowrap, overflow-x:auto, scrollbar masquée)
+    - Grid donut + cat chart : 1fr 1fr → 1fr (empilé en colonne)
+    - Donut : taille adaptative (largeur carte − 20px, max 300px)
+    - Texte central donut : 11px → 15px
+    - Légende donut : 10px → 12px, dots plus gros
+    - Cat chart : rowH 26px → 38px, labels 10px → 13px, montants 9px → 12px
+    - Budget chart : rowH 28px → 40px, labels 10px → 13px, montants 9px → 11px
+    - Max chars labels : 13 → 15-16 chars (plus de place avec texte plus grand)
+    - KPI cards : valeur 22px → 19px, sub 11px → 10px (légèrement ajustées)
+
+  ⚠️ CONNU — Textes canvas encore lisibles mais petits sur certains mobiles
+    → voir Roadmap item 24 (grossir caractères graphiques sur mobile)
+
+Notes techniques :
+  - _dbGetBudgetCatsWithBucket() : helper qui reconstruit _bdCats depuis _lastBudgetData
+    avec bucket_name inclus sur chaque cat → indispensable pour le cross-filter bucket
+  - Ordre shell HTML fixe : KPIs → filtres période → donut|cat → badge filtre → détail →
+    Budget vs Dépensé → Courbe épargne
+  - dataset.dbReady : shell buildé une seule fois, _dbRefresh() recalcule à chaque activation
+
+================================================================================
+SESSION 27 — 2026-05-14  [Fix ventilation transfert · AUDIT COMPLET · Passe de correction 29 bugs]
+================================================================================
+[CONTEXTE]
+  1. Bug signalé : la ventilation d'un prélèvement budget depuis une catégorie
+     plantait (erreur JS). 2. Audit complet demandé sur les fichiers de BASE
+     (Code_GS.txt + index.Html.txt) : code, calculs, visuels. 3. Correction de
+     tous les bugs en une passe dans les fichiers _TEST.
+
+[FICHIERS]
+  - Lus (audit)   : Code_GS.txt (intégral), index.Html.txt (intégral)
+  - Modifiés      : Code_GS_TEST.txt, index_TEST.Html.txt,
+                    Support/AUDIT_Code_GS_index_2026-05-14.md (rapport créé)
+
+[MODIFICATIONS — Code_GS_TEST.txt]
+  A4  deleteMultiple : snapshot undo limité aux lignes réellement supprimées
+      (avant : l'undo ré-ajoutait les TX verrouillées jamais supprimées → doublons)
+  A5  addPrevision : écrit plan_id (colonne créée si absente) — les prévisions
+      n'apparaissent plus dans tous les plans
+  A6  lockAllCleared : filtre plan_id — ne verrouille plus les TX des autres plans
+  B5  duplicateMultiple : copie la colonne debtor (bénéficiaire conservé)
+  B6  addSplitTransaction : snapshot {id, ids:newIds} + undoLastAction case
+      "addTransaction" supprime toutes les lignes du split (avant : seulement la 1re)
+  B9  deletePlan : purge aussi la feuille Projets
+  B10 _getSavingsCatId : fallback par détection de nom (/épargn|économi|econom|saving/i)
+      avant CAT001 (= À assigner, qui faussait le disponible)
+  B11 toggleClearedMultiple : exclut les TX verrouillées (cohérent avec l'undo)
+  B12 addDebtor/updateDebtor : résolveur d'index nom tolérant (_debtorNameIdx),
+      même logique que _getDebtors
+  B13 copyBudgetFromPrevious : reporte aussi les budgets négatifs (retraits épargne
+      planifiés) — filtre !==0 au lieu de >0 ; + filtre plan sur la boucle update
+  B16 NOUVELLE FONCTION transferBudget(period, srcId, srcBudget, parts) :
+      transfert budget ATOMIQUE via saveBudgetBatch (1 appel GAS, 1 snapshot undo)
+  C1  getBudgetByPeriod : helper txPeriodNum() — ventile par colonne "period"
+      (fallback date si vide), cohérent avec Banque/l'historique. Appliqué aux
+      3 boucles : entrées, dépenses du mois, carry
+  C2  rolloverBudget : somme SIGNÉE des dépenses (un remboursement diminue le
+      dépensé — avant Math.abs le gonflait) + filtre plan_id sur les TX
+
+[MODIFICATIONS — index_TEST.Html.txt]
+  A1  confirmTransfert (split) : srcBudget calculé AVANT closeTransfertModal()
+      (qui met _transfertSrc = null) → fin du crash TypeError [fait en début de session]
+  B1  Alerte dépassement : cat.category_name (au lieu de cat.name → affichait "?")
+  B4  selectAll : REFACTO — _getFilteredTransactions() factorise TOUS les filtres
+      (période spéciales, tiers, verrouillées, sens, recherche) partagée entre
+      applyFilters et selectAll → "Tout sélectionner" = exactement ce qui est affiché
+      (avant : comparait le tiers à la DESCRIPTION et ignorait filtre verrouillées/recherche)
+  B8  _refreshAll : _allPlans (au lieu de allPlans global implicite) + _renderPlanSelector()
+  B14 loadPeriods + savePrevisionModal : withFailureHandler (fin du spinner infini)
+  B15 _doSaveSimpleTx/_doSaveSplitTx : en cas d'échec GAS, la TX est remise en tête
+      de _txSaveQueue au lieu d'être perdue
+  B16 confirmTransfert (simple + split) : un seul appel transferBudget atomique
+      (avant : 2..N saveBudget en série → transfert à moitié appliqué si échec)
+  C3  openCatHistory : total signé (un remboursement diminue le total du mois)
+  C4  computeSoldes : suppression variable morte "previsionnel"
+  C5  saveBatchBudget : invalidateBudgetCache() GLOBAL (le carry des périodes
+      suivantes change aussi)
+  C6  _recomputeLocalBudget : restaure aussi _budgetPeriodAssigned après la projection
+  D1  CSS : suppression du sélecteur button[id="btnSortie"] (halo rouge permanent
+      sur "↑ Dépense" même quand Revenu/Attendu actif)
+  D2  ÉCHAPPEMENT : helper _esc() + application aux injections utilisateur :
+      table TX (catégorie/bénéf/description + title), file d'attente, historique
+      catégorie, prévisions, note budget. openCatHistoryById(catId, period) remplace
+      l'injection du nom dans onclick (apostrophe cassait le JS)
+  D3  Suppression des boutons ↑/↓ appelant _moveItem (fonction supprimée) dans
+      renderCategoriesList/renderBucketsList (legacy caché)
+  D4  _refreshAllCategoryDropdowns : fillBucketSelect("catModalBucket") — l'option
+      "— Aucun groupe —" n'est plus écrasée
+  D5  fillCategorySelect : masque les catégories inactives (sauf valeur sélectionnée)
+  D6  MOBILE (signalé utilisateur) : FAB "＋" (Banque), #refreshNavBtn et #undoNavBtn
+      étaient positionnés DERRIÈRE la pilule de navigation (~145px de haut) →
+      repositionnés au-dessus : FAB bottom safe+158px à droite, refresh safe+158px
+      à gauche, undo safe+216px à gauche
+
+[VALIDATION]
+  - node : parse syntaxique OK sur Code_GS_TEST.txt et sur le bloc <script> complet
+    d'index_TEST.Html.txt (414 Ko)
+  - Plus aucune référence à _moveItem, previsionnel, allPlans (implicite),
+    openCatHistory('...nom...') inline
+
+[NOTES]
+  - Rapport d'audit complet : Support/AUDIT_Code_GS_index_2026-05-14.md
+    (42 points, priorisés P0→P3, avec statut base vs _TEST)
+  - NON traités (volontairement, P3/nettoyage) : dead code computeDisponibleFrontend,
+    openRowMenu, caches GAS inutiles, factorisation _prvRcvMap
+  - Les fichiers de BASE (Code_GS.txt / index.Html.txt) restent INTOUCHÉS —
+    recommandation : promouvoir les _TEST comme nouvelle base après validation
+  - ⚠️ À TESTER en priorité : ventilation transfert (simple + multi-destinations),
+    file d'attente avec échec réseau, "Tout sélectionner" avec filtres, boutons
+    mobiles (FAB/refresh/undo), report budget avec budgets négatifs, undo d'un split
+
+[MISE EN PROD — même session]
+  1. Sauvegarde des anciens fichiers de base :
+     Old/index.Html_avant-promo-S27_2026-05-14.txt (537 590 o)
+     Old/Code_GS_avant-promo-S27_2026-05-14.txt   (104 101 o)
+  2. Promotion : index_TEST.Html.txt → index.Html.txt, Code_GS_TEST.txt → Code_GS.txt
+     → les fichiers de base = désormais la version S27 (BASE et _TEST identiques)
+  3. deploy/Index.html + deploy/Code.js mis à jour + timestamp build injecté
+  4. clasp push --force : 3 fichiers poussés OK
+  5. clasp deploy → version @615 sur le deploymentId de prod
+     https://script.google.com/macros/s/AKfycbxRBAggvRZgcG324NBYLa4ZBPvaf7fiVUTbYN5LMAQ6erVgN8CbA4u6cLERNuY9jSwm/exec
+
+================================================================================
+SESSION 28 — 2026-07-03  [Bug "argent disparu" transfert · 4 garde-fous intégrité · deploy @616]
+================================================================================
+[CONTEXTE]
+  Utilisateur : écart entre "À assigner" (0) et projection fin de mois (+10) sur PLAN001
+  après tests de transfert par ventilation. Enquête forensique demandée AVANT toute modif.
+
+[DIAGNOSTIC — via exports Backend BudgetApp ChatGpt (4)-(8).xlsx]
+  CAUSE : dans le modal transfert, l'option placeholder du select destination est créée
+  SANS attribut value → select.value renvoie le TEXTE ("— Choisir une catégorie —") →
+  le garde "if (!destId)" passe → transfert confirmé vers une catégorie inexistante →
+  source débitée, argent crédité nulle part. PREUVE : 3 lignes budget fantômes dans la
+  feuille Budgets (lignes 274 "— Prélever depuis… —" 03/2026, 277 et 311 "— Choisir une
+  catégorie —" 04/2026 et 07/2026). 2 des 3 antérieures au 14/05 → bug ANCIEN, pas lié
+  au déploiement S27. Chronologie du trou : export (6) 02/07 21:06 écart +100,00 €
+  (test de la veille) → (7) 03/07 10:10 : -16,59 (recorrections manuelles) → (8) 10:38 :
+  +10,00 (Travail 20→10, les 10 € jamais crédités). "À assigner" affichait 0 malgré le
+  trou car masqué par 11 323,69 € de budgets futurs (règle YNAB min(0,…)).
+  RÉPARATION DONNÉES (utilisateur) : +10 € remis sur Travail 07/2026 → 0 = 0 confirmé.
+  Reste à nettoyer : les 3 lignes fantômes (le bandeau intégrité les signale désormais).
+
+[MODIFICATIONS — 4 GARDE-FOUS]
+  index_TEST.Html.txt :
+   1. _fillTransfertSelect : placeholder.value = "" (cause racine)
+   2. confirmTransfert simple : refus si destCat introuvable (avant : destBudget=0 → perte)
+   3. confirmTransfert split : blocage si Σ lignes ≠ total à ventiler (modal laissé ouvert)
+   4. loadBudget/renderBudget : window._budgetMeta + bandeau intégrité en tête du budget
+      (⚠️ lignes orphelines + ℹ️ surplus masqué par budgets futurs)
+  Code_GS_TEST.txt :
+   2bis. _getAllCategoryIdsRaw() + REJET (throw) dans saveBudget et saveBudgetBatch de
+      toute écriture vers une catégorie inexistante — protège TOUS les chemins
+   4bis. getBudgetByPeriod renvoie surplusMasque, orphanCount, orphanSum
+
+[DÉPLOIEMENT]
+  Syntaxe node OK · promotion _TEST → base · clasp push + deploy → @616 (12:06)
+  Décision utilisateur : app perso uniquement → on RESTE sur Sheets (pas de migration
+  Supabase) ; garde-fous = protection suffisante.
+
+================================================================================
+SESSION 29 — 2026-07-04  [Comptes bancaires PHASE 1 — fondations · deploy @617]
+================================================================================
+[CONTEXTE]
+  Spec Support/SPEC_Comptes_Bancaires.md — décisions utilisateur : multi-comptes sur
+  TOUS les plans (existants et futurs), noms modifiables dans l'app, comptes par défaut
+  "LBP" (PLAN001) / "CE" (Commun), sélecteur chips, solde d'ouverture = revenu À assigner.
+
+[MODIFICATIONS — Code_GS_TEST.txt]
+  - SHEETS.ACCOUNTS = "Comptes" (id|name|is_default|order|active|plan_id)
+  - Section COMPTES : _getAccountsSheet (auto-création), _accountsHeaderMap, _getAccounts,
+    getAccounts, _getDefaultAccountId, _appendAccountRow
+  - _migrateAccounts() : compte principal par plan (LBP/CE/"Compte principal") + colonne
+    account_id sur Banque + backfill de TOUT l'historique par plan (batch 1 écriture)
+    → déclenchée une fois via ScriptProperties "accountsSetupV1" dans getInitialData
+  - CRUD : addAccount (1er compte d'un plan = principal), updateAccount, setDefaultAccount
+    (exclusif par plan), toggleAccountActive (refus sur principal), deleteAccount
+    (refus si TX rattachées ou principal)
+  - getInitialData renvoie accounts + defaultAccountId (fallback erreur inclus)
+  - addTransaction/addSplitTransaction/addBatchTransactions : écrivent account_id
+    (form.account_id || compte principal) ; updateTransaction : modifie si fourni
+  - _getAllTransactions renvoie account_id
+  - addPlan : crée automatiquement le compte principal du nouveau plan
+  - deletePlan : purge aussi la feuille Comptes
+
+[MODIFICATIONS — index_TEST.Html.txt]
+  - Globals allAccounts + _selectedAccountId (réinitialisés à chaque switch de plan)
+  - CSS .account-chips / .account-chip (base, toutes tailles)
+  - HTML : #accountChips (Saisie, sous txSuccess) + #modalAccountChips (modal ajout Banque)
+  - _renderAccountChips() : chips masquées si ≤ 1 compte actif → ZÉRO changement visuel
+    en mono-compte ; sécurité re-sélection du principal si compte masqué/supprimé
+  - Payloads : account_id sur saveTransaction, collectSplitLines (chaque ligne),
+    _collectCurrentForm, submitQueue (2 chemins), saveModalTransaction
+  - Paramètres : nouvel onglet "Comptes" (stab-comptes + settings-panel-comptes),
+    _renderAccountsSettings (⭐ principal, renommer, masquer/réactiver, supprimer),
+    _showInputModal générique, _openAddAccount/_renameAccountPrompt/_setDefaultAccountUI/
+    _toggleAccountActiveUI/_deleteAccountConfirm
+  - Handlers init/_switchPlan/_refreshAll/_confirmDeletePlan : réception accounts
+
+[VALIDATION + DEPLOY]
+  - node : syntaxe OK (GAS + <script> complet) · câblage vérifié (occurrences)
+  - Promotion _TEST → base · clasp push + deploy → @617 (build 2026-07-04 10:04)
+  - Au 1er chargement : migration silencieuse (feuille Comptes créée, LBP/CE affectés
+    à tout l'historique). Chips invisibles tant que le 2e compte n'est pas créé.
+
+[PHASE 1bis — même session, deploy @618 (build 2026-07-04 10:08)]
+  Compte sur les chemins de MODIFICATION (signalé utilisateur) :
+  - Modal d'édition : chips "Compte" (#editAccountChips, état séparé _editSelectedAccountId,
+    propose aussi un compte masqué si la TX y est rattachée) → correction possible d'une
+    TX saisie sur le mauvais compte. confirmEdit envoie account_id.
+  - duplicateFromEdit (frontend) + duplicateMultiple (GAS) : le duplicata conserve le compte
+  - withdrawFromProject (GAS) : le retrait épargne s'enregistre sur le compte principal
+
+[PHASE 1ter — même session, deploy @619 (build 2026-07-04 10:24)]
+  Retour utilisateur : compte = CHAMP dans la ligne de saisie (pas des chips en haut),
+  + les chips non positionnées cassaient la grille desktop (espace entre Date et Bénéf).
+  - Saisie : nouvelle colonne .sc-compte (select #accountSelect) ENTRE Date et Bénéficiaire
+  - Grille desktop : body.multi-accounts → grid 7 colonnes + replacements (benef 3, desc 4,
+    cat 5, amt 6, actions 7) ; en mono-compte la grille 6 colonnes d'origine est intacte
+  - body.multi-accounts posé par _renderAccountChips() si ≥ 2 comptes actifs
+  - Modal ajout : #modalAccountSelect (après la date) ; modal édition : #editAccountSelect
+    (chips supprimées partout, remplacées par selects natifs)
+  - Mobile : .sc-compte stylée comme carte de champ (86px, font 25px, entre Date et Bénéf)
+  - CSS chips (.account-chip*) supprimé
+
+[PHASE 2 — même session, deploy @620 (build 2026-07-04 10:36)]
+  Périmètre demandé : rapprochement par compte + soldes individuels/consolidé dans le
+  volet de droite (+ filtre compte Banque, nécessaire au workflow par relevé).
+  - VOLET (drawer) : sous le solde prévisionnel consolidé (inchangé), bloc
+    #drawerAccountSoldes = solde prévisionnel PAR compte (⭐/🏦 nom + montant coloré).
+    _computeAccountSoldes() : TX sans account_id comptées sur le principal.
+    Visible seulement en multi-comptes ; comptes masqués affichés si solde ≠ 0.
+  - RAPPROCHEMENT PAR COMPTE : select #reconcileAccount dans le modal Réconcilier
+    (pré-sélection = filtre Banque actif sinon principal), _refreshReconcileModal()
+    recalcule solde pointé + compteur PAR compte, label "Solde pointé — <compte>",
+    confirmReconcile ne verrouille QUE les TX pointées du compte choisi.
+    Helper _txOnAccount(t, accId) (fallback principal si account_id vide).
+  - FILTRE COMPTE Banque : select #filterAccount (masqué en mono-compte via
+    body.multi-accounts), options depuis allAccounts (masqués inclus), branché dans
+    _getFilteredTransactions → applyFilters ET selectAll cohérents. Ajouté aux 3
+    tableaux d'ids (reset switchPlan, resetAllFilters, highlights).
+  - _afterAccountsMutation rafraîchit aussi populateFilters + updateDrawerSolde.
+  NOTE : openLockModal/confirmLockAll (ancien "Verrouillage rapprochement") = legacy
+  sans appelant UI — non modifié. Badge compte sur lignes Banque : reporté (Phase 2b).
+
+[PHASE 2b — même session, deploy @621 (build 2026-07-04 10:51)]
+  Retours utilisateur sur la Phase 2 :
+  - VOLET PLIÉ : le bloc soldes par compte restait visible replié (style inline
+    court-circuitait les règles .drawer.open). → classe .drawer-account-soldes
+    + .has-accounts, visibilité 100% CSS alignée sur .drawer-solde-card
+    (caché plié, visible déplié/épinglé). Lignes en classes das-row/das-name/das-val.
+  - TAG COMPTE sur chaque ligne Banque : _accTag(t) dans la cellule catégorie
+    (.acc-tag, affiché seulement via body.multi-accounts, ellipsis 64px)
+  - RAPPROCHEMENT ISOLÉ PAR COMPTE (risque signalé : verrouiller les TX pointées
+    d'un autre compte) — 3 verrous :
+    1. _refreshReconcileModal synchronise le filtre Banque (#filterAccount) sur le
+       compte du modal → la liste derrière montre EXACTEMENT ce qui sera verrouillé
+    2. confirmReconcile ne prend que les TX du compte (déjà en @620)
+    3. GAS reconcileTransactions(ids, accountId) : ceinture serveur — re-filtre par
+       compte (vide = principal) même si le frontend envoyait des ids erronés
+
+[PHASE 2c UI — même session, deploy @622 (build 2026-07-04 11:04)]
+  Retours utilisateur affichage :
+  - Filtre compte EN PREMIER dans la barre + accentué thème : bordure/texte
+    var(--primary) (s'adapte dark/zen/fintech), fond transparent, gras.
+    Option par défaut "🏦 Tous comptes".
+  - COLONNE "Compte" dans le tableau TX : th td-acc (triable, _setSortCol('account'),
+    tri par nom via _accSortName) + td dédié avec le tag — visible uniquement via
+    body.multi-accounts (mono-compte : tableau inchangé). Tag retiré de la cellule
+    catégorie.
+  - MOBILE filtres : la 1re history-toolbar (selects) passe de scroll horizontal
+    tronqué à GRILLE 2 colonnes (tous visibles, ellipsis), compte en pleine largeur
+    (grid-column 1/-1, font 26px), autres selects 23px/74px.
+  - Tag compte : 9px→10.5px desktop ; mobile 17px, padding 4x10, max-width 140px.
+
+[FIX MODAL ÉDITION — même session, deploy @623 (build 2026-07-04 11:12)]
+  Bug signalé : "tout ne s'affiche pas" dans le modal de modification.
+  CAUSE LATENTE révélée par le champ Compte : .modal-large est un flex column
+  avec max-height:88vh — SANS flex-shrink:0, quand le contenu dépasse, les enfants
+  flex se COMPRESSENT (champs écrasés) au lieu de laisser overflow-y:auto défiler.
+  FIX : .modal-large > * { flex-shrink: 0; } (protège TOUS les modaux .modal-large)
+  + #editAccountSelect/#modalAccountSelect en width:100%.
+
+[UX RAPPROCHEMENT — même session, deploy @624 (build 2026-07-04 11:14)]
+  Friction signalée : le modal refusait de s'ouvrir si le compte pré-sélectionné
+  (principal/filtre) n'avait rien à verrouiller, obligeant à filtrer d'abord.
+  → openReconcileModal : si le compte proposé n'a pas de TX pointées non verrouillées
+  mais qu'un autre en a, bascule automatique dessus (_hasPointed). Message d'échec
+  d'ouverture désormais global (plus de nom de compte, car auto-switch garantit
+  qu'aucun compte n'a rien). Le sélecteur du modal reste utilisable pour changer.
+
+================================================================================
+SESSION 30 — 2026-07-06  [Comptes PHASE 3 — Virements internes · deploy @625]
+================================================================================
+[CONTEXTE]
+  Nouveau type de transaction "↔ Virement interne" entre deux comptes du même plan.
+  Principe : paire de TX liées par transfer_group_id — source amount +X (sortie),
+  destination amount −X (entrée), category_id VIDE → invisible pour le budget par
+  construction, somme consolidée = 0.
+
+[MODIFICATIONS — Code_GS_TEST.txt]
+  - addTransfer(form{date,amount,from_account_id,to_account_id,description}) :
+    validations (comptes ≠, montant), colonne transfer_group_id créée si absente,
+    2 lignes atomiques (desc auto "Virement → X" / "Virement ← Y"),
+    snapshot undo "addTransfer" {ids} (case partagé avec addTransaction, label
+    "Virement interne")
+  - deleteTransferGroup(groupId) : suppression TOUJOURS en paire, refus si une
+    jambe est verrouillée, snapshot deleteMultiple (undo restaure la paire)
+  - deleteMultiple : sélection étendue à la paire entière si une jambe sélectionnée
+  - duplicateMultiple : jambes de virement JAMAIS dupliquées
+  - updateTransaction : refus {error:"transfer"} sur une jambe de virement
+  - _getAllTransactions renvoie transfer_group_id
+
+[MODIFICATIONS — index_TEST.Html.txt]
+  - _isTransfer(t) + transfer_group_id dans _normalizeTx
+  - Saisie : bouton "↔ Virement" dans le segment (visible multi-comptes uniquement,
+    style .active-virement indigo #818CF8) — formulaire simplifié : date + compte
+    source (champ Compte existant) + "Vers le compte" (#virementDest, comptes actifs
+    sauf source, resynchronisé si la source change) + montant + description.
+    Bénéficiaire et catégorie masqués (setSense restaure sur les autres sens).
+    Exclu de la file d'attente (_collectCurrentForm → null).
+  - saveTransaction : branche virement → addTransfer (validations avant envoi)
+  - Banque : lignes virement affichées "↔ Virement" (indigo), clic → modal dédié
+    #transferInfoModal (source → destination, montant, date, Supprimer la paire —
+    masqué si une jambe verrouillée) ; startEditRow + _doUpdateTransaction gardés
+  - EXCLUSIONS _isTransfer : renderSuiviTable (entrées/sorties réelles),
+    _dbComputeAll (toutes stats dashboard), liste de liaison prévisions.
+    VOLONTAIREMENT INCLUS : soldes par compte + drawer (les virements déplacent
+    l'argent), sous-totaux Banque (vue cash de la liste filtrée), pointage/
+    rapprochement par jambe (chaque jambe apparaît sur son relevé bancaire).
+
+[VALIDATION + DEPLOY]
+  node syntaxe OK (GAS + script complet) · câblage vérifié · deploy @625
+  (build 2026-07-06 09:10). Fichiers base promus.
+  + @626 (09:16) : alignement desktop du champ "Vers le compte" — neutralisation
+    du style carte du .group interne de #virementBlock (même reset que
+    #simpleFormBlock : padding/border/gap à 0) → label + select alignés sur les
+    autres colonnes de la ligne de saisie.
+  + @627 (09:23) : header desktop compact — 42px → 28px, titre 19px → 12px
+    uppercase discret (opacity .55). Le ☰ était déjà masqué desktop, les zones
+    sticky collent au conteneur de scroll → aucun impact ailleurs. Mobile inchangé.
+  + @628 (09:28) : barre de sous-totaux Banque — 4e valeur "✓ Pointé" = somme des
+    TX pointées/verrouillées de la LISTE FILTRÉE (aide au rapprochement : filtre
+    compte → le total pointé à comparer au relevé, mis à jour EN DIRECT à chaque
+    pointage via computeSubtotal(_getFilteredTransactions()) dans handleToggleCleared
+    (optimiste + confirmation serveur + rollback)).
+  + @629 (09:37) : retours utilisateur sur @628 —
+    1. "✓ Pointé" recalculé sur TOUTES les transactions avec pour SEUL filtre le
+       compte sélectionné (les autres filtres période/tiers/recherche sont ignorés)
+       → chiffre directement comparable au relevé, identique au modal Réconcilier.
+       Entrées/Sorties/Solde restent sur la liste filtrée.
+    2. BUG pointage "ça se re-clique tout seul" — 3 causes traitées :
+       a. verrou _clearedInFlight par TX : clics ignorés pendant l'aller-retour
+          serveur (anti double-clic / ghost-tap)
+       b. GAS toggleCleared(id, desired) : état CIBLE idempotent au lieu d'un flip
+          (un double-appel ne re-bascule plus) — flip conservé si desired absent
+          (rétro-compatible frontend en cache)
+       c. la réponse serveur ne remplace PLUS allTransactions entier : une réponse
+          tardive écrasait les pointages optimistes plus récents des autres lignes ;
+          on ne confirme désormais que la TX concernée
+
+[À TESTER]
+  Virement LBP → nouveau compte : soldes des 2 comptes bougent, consolidé stable,
+  budget/À assigner inchangés, dashboard inchangé, undo restaure la paire,
+  suppression via clic sur la ligne, pointage de chaque jambe au rapprochement.
+
+[RETRAIT ÉPARGNE — 07/07, deploy @630 (build 2026-07-07 21:57)]
+  Analyse : _confirmWithdraw validait côté client mais withdrawFromProject (GAS)
+  n'avait AUCUN contrôle serveur (TX écrite même si épargne insuffisante, projet
+  clampé Math.max(0,…) → argent créé de nulle part possible) et compte principal en dur.
+  1. CHOIX DU COMPTE destinataire : select #withdrawAccount dans le modal retrait
+     (#withdrawAccountWrap, visible multi-comptes via body.multi-accounts, principal
+     présélectionné) → withdrawFromProject(…, accountId), row account_id =
+     accountId || principal.
+  2. CONTRÔLES (refus AVANT toute écriture) :
+     - frontend : _openWithdrawModal refuse d'ouvrir si disponible projet ≤ 0
+     - GAS : throw si montant vide · solde épargne global ≤ 0 · montant > épargne
+       disponible · disponible projet ≤ 0 · montant > alloué au projet
+     (messages explicites remontés par le failure handler existant)
+
+[COMPTES — CONTRÔLE SOLDE, deploy @631 (22:04)]
+  Clarification utilisateur : le contrôle demandé portait sur les COMPTES BANCAIRES.
+  - _getAccountBalance(accountId) GAS : solde prévisionnel du compte (TX de son plan,
+    TX sans account_id → compte principal, convention -Σ amounts)
+  - deleteAccount : REFUS si solde ≠ 0 (découvert OU argent restant) avant même le
+    contrôle "TX rattachées" — message "videz-le d'abord (virement interne ↔)"
+  - toggleAccountActive (masquage) : même refus si solde ≠ 0 (avant : on pouvait
+    masquer un compte avec de l'argent dessus)
+  - Seul un compte à exactement 0,00 € (±0,004) peut être supprimé/masqué —
+    comme une clôture de compte en banque réelle. Le virement interne (Phase 3)
+    est l'outil pour le vider.
+
+================================================================================
+SESSION 31 — 2026-07-07  [BLINDAGE ÉCRITURE + PERF · deploy @632]
+================================================================================
+[CONTEXTE]
+  Suite de l'inventaire des trous critiques restants : correctifs 1+2+3 + perf.
+
+[1. VERROU DE CONCURRENCE — LockService]
+  Deux exécutions GAS simultanées (2 appareils/2 utilisateurs) avec getLastRow()+1
+  pouvaient écrire sur la MÊME ligne (la 2e écrase la 1re, silencieusement).
+  → _withScriptLock(fn) : LockService.getScriptLock, waitLock 20s, réentrant par
+    flag _lockHeld (une exécution ne se bloque pas elle-même).
+  → 12 fonctions d'écriture enveloppées (pattern wrapper + _xxxImpl, corps intacts) :
+    addTransaction, addSplitTransaction, addBatchTransactions, addTransfer,
+    deleteTransferGroup, deleteTransaction, deleteMultiple, duplicateMultiple,
+    withdrawFromProject, saveBudget, saveBudgetBatch, undoLastAction.
+    (transferBudget passe par saveBudgetBatch → un seul verrou)
+
+[2. GARDE-FOU deleteCategory]
+  Avant : suppression sèche → TX orphelines aux dépenses INVISIBLES pour le budget
+  mais comptées dans les soldes (même famille que le bug des 10 €).
+  → REFUS si des transactions utilisent la catégorie (message : masquez-la plutôt)
+  → REFUS si des lignes budget à montant ≠ 0 ou avec note la référencent
+  → Les lignes budget vides (0 €, sans note) sont nettoyées avec la catégorie
+
+[3. VALIDATION DES TX — catégorie + compte]
+  _getAllAccountIdsRaw() + _validateTxRefs(catId, accId, allowEmptyCat, sets?) :
+  catégorie obligatoire et existante (vide autorisé seulement pour les virements),
+  compte existant si fourni. Appliqué à addTransaction, addSplitTransaction (toutes
+  les lignes AVANT toute écriture), addBatchTransactions, updateTransaction ;
+  addTransfer vérifie l'existence des comptes source/destination dans le plan.
+
+[4. BANDEAU INTÉGRITÉ étendu]
+  getBudgetByPeriod renvoie aussi orphanTxCount/orphanTxSum (TX du plan dont la
+  catégorie n'existe plus — catégorie vide/virement ignorée). Bandeau Budget :
+  "⚠️ N transaction(s) avec catégorie inexistante (X €) — invisibles pour le budget".
+
+[5. PERF]
+  - addSplitTransaction : N écritures (getRange par ligne) → 1 setValues batch
+    + 1 setNumberFormat sur la plage période
+  - addBatchTransactions : idem pour toute la file
+  - Recherche globale Banque : debounce 160 ms (avant : re-render complet de la
+    table à CHAQUE frappe)
+
+[VALIDATION + DEPLOY]
+  node syntaxe OK · 12/12 wrappers vérifiés (fonction + Impl) · deploy @632
+  (build 2026-07-07 22:16). Fichiers base promus.
+
+[HEADER DESKTOP — 08/07, deploy @633 (build 2026-07-08 09:54)]
+  Refonte inspirée maquette utilisateur (étape 1/3 validée, étapes sidebar +
+  saisie carte NON lancées) :
+  - Titre à GAUCHE (16px, gras, couleur thème) au lieu de centré 12px uppercase
+  - Badge plan doré (#headerPlanBadge, rempli par _renderPlanSelector — variable
+    renommée _hdrBadge, collision avec le badge drawer existant)
+  - Actions à droite : #undoTopBtn (branché sur _setUndoBtn/doUndo existants,
+    .available doré) + #refreshTopBtn (_refreshAll) + #settingsTopBtn (openDrawer)
+    — classe .header-icon-btn 30px
+  - Bulles flottantes bas-gauche (#undoNavBtn/#refreshNavBtn) MASQUÉES sur desktop
+    (remplacées par le header) — mobile inchangé (bulles conservées, badge/boutons
+    header cachés par la base CSS)
+  - Hauteur header 28px → 46px. CSS dans le DERNIER bloc desktop (gagne la cascade,
+    nécessaire car les règles de base des bulles ont des !important plus tardifs
+    que le 1er bloc desktop)
+
+[BADGE PLAN MOBILE + FIX — deploy @634 (build 2026-07-08 10:05)]
+  - Badge plan doré affiché AUSSI sur mobile (à droite du titre centré, 14px/tap
+    confortable) — plus besoin d'ouvrir le volet pour savoir dans quel plan on saisit
+  - BUG "2 lettres sous le champ" élucidé : #drawerPlanBadge (initiales du plan pour
+    le rail desktop replié) n'avait AUCUNE règle de base → il s'affichait brut sous
+    le sélecteur de plan dans le volet mobile. → .drawer-plan-badge { display:none }
+    en base, le bloc desktop le réaffiche uniquement rail replié.
+
+[SÉLECTEUR PLAN HEADER MOBILE — deploy @635 (build 2026-07-08 10:13)]
+  Sur MOBILE le badge devient un SELECT (#headerPlanSelect) : pastille dorée
+  identique avec chevron SVG intégré (appearance:none), onchange → _switchPlan
+  → changement de plan en 2 gestes sans ouvrir le volet. Rempli/synchronisé par
+  _renderPlanSelector (mêmes options que le select du volet). Desktop : badge
+  statique conservé (changement via volet). Base CSS masque le select partout,
+  le bloc mobile l'affiche et masque le badge.
+
+[TUTORIEL UTILISATEUR — 08/07]
+  Création de Support/TUTORIEL_WIMM.md : guide complet (mise en place, concepts,
+  les 6 onglets pas à pas, protections/messages, routine conseillée, dépannage,
+  annexe maintenance). Couvre l'app jusqu'à @635.
+  ⚠️ RÈGLE PERMANENTE : ce guide doit être mis à jour à CHAQUE évolution
+  fonctionnelle (section concernée + date/version en tête de fichier).
+
+[AIDE INTÉGRÉE — deploy @636 (build 2026-07-08 10:25)]
+  Paramètres → nouvel onglet "❓ Aide" : 10 sections en accordéon (<details>,
+  classe .help-sec/.help-body) miroir de Support/TUTORIEL_WIMM.md — démarrer,
+  concepts, saisie, budget, banque/rapprochement, virements/comptes, épargne,
+  suivi, protections, routine+dépannage. RECHERCHE (#helpSearch → _filterHelp) :
+  filtre les sections ET les ouvre automatiquement (quasi-chatbot par mots-clés).
+  Contenu construit une fois (_renderHelp, dataset.ready). Tailles tactiles mobile.
+  ⚠️ RÈGLE : l'aide intégrée ET le tutoriel MD se mettent à jour ENSEMBLE à chaque
+  évolution fonctionnelle.
+  Chatbot IA : jugé surdimensionné pour une app perso — la recherche par mots-clés
+  couvre le besoin ; option future = API Gemini (quota gratuit) appelée depuis GAS
+  avec le guide en contexte, notée en roadmap si le besoin émerge.
+
+[RECHERCHE AIDE + RÉFÉRENCEMENT — deploy @637 (build 2026-07-08 10:33)]
+  La recherche de l'aide passe de substring simple à :
+  - RÉFÉRENCEMENT DE MOTS-CLÉS : chaque section porte des synonymes cachés
+    (dataset.kw — ex. Banque : "pointer cocher releve reconcilier verrouiller
+    corriger trompe mauvais compte…") → "clôturer un compte", "je me suis trompé"
+    trouvent leur section
+  - Insensible aux ACCENTS (normalize NFD), multi-mots (tous doivent matcher)
+  - CLASSEMENT par pertinence (titre×5 > mots-clés×3 > texte×1) avec
+    ré-ordonnancement DOM (meilleure section en premier, ouverte)
+  - Message "aucun résultat" avec suggestions
+  ⚠️ Maintenance : à chaque nouvelle fonctionnalité, enrichir AUSSI les mots-clés
+  de la section d'aide concernée.
+
+[VISITES GUIDÉES — deploy @638 (build 2026-07-08 10:41)]
+  Moteur de pas-à-pas "projecteur" sur la VRAIE interface :
+  - #tourHighlight (bordure dorée + box-shadow 9999px = assombrit tout sauf la cible,
+    transition animée entre étapes) + #tourTip (bulle titre/texte/Précédent/Suivant/
+    Quitter, position auto sous/sur la cible, clamp viewport, re-calage post-scroll)
+  - _TOURS : 3 parcours — saisie (7 étapes), virement (5, bouton visible multi-comptes
+    via .tour-btn-vir), rapprochement (4). step={go(navigation), sel, txt}.
+  - Étapes dont l'élément est absent/masqué (ex .sc-compte en mono-compte) SAUTÉES
+    automatiquement (offsetParent check)
+  - Lancement : boutons "▶ Me montrer pas à pas" dans les sections d'aide concernées
+  - L'interface reste cliquable pendant la visite (l'utilisateur peut faire l'action
+    en même temps)
+  Tutoriel MD : mention de l'aide intégrée + visites ajoutée en tête (version @638).
+  ⚠️ Maintenance : si un layout/id de la Saisie ou Banque change, vérifier les
+  sélecteurs des _TOURS.
+
+[VISITES v2 — deploy @639 (build 2026-07-08 10:52)]
+  Retours utilisateur :
+  - Visite SAISIE réordonnée champ par champ (ordre du formulaire) : sens → date →
+    compte → bénéficiaire → description → catégorie → montant → enregistrer (numérotés)
+  - Visite VIREMENT : bouton ▶ toujours visible ; en mono-compte, message explicatif
+    ("nécessite 2 comptes actifs") au lieu d'un bouton invisible (cause du "n'apparaît
+    pas" signalé). CSS .tour-btn-vir supprimé.
+  - NOUVELLE visite BUDGET (7 étapes) : période → À assigner → projection → barre
+    d'outils → les 4 colonnes → interactions d'une ligne catégorie → carte récap.
+    Lançable depuis l'Aide ET via un bouton ❓ DANS l'onglet Budget (barre d'actions,
+    .help-spot-btn doré) — le "?" contextuel demandé.
+
+[VISITES v3 — deploy @640 (build 2026-07-08 11:00)]
+  Bug signalé : halo décalé selon l'endroit d'où la visite est lancée.
+  CAUSE : positionnement one-shot (setTimeout 300ms) — scroll fluide pas terminé
+  ou contenu asynchrone (budget) rendu APRÈS le calcul.
+  FIX : SUIVI CONTINU par requestAnimationFrame tant que la visite est active
+  (halo + bulle recalés à chaque frame). Transition CSS active uniquement pendant
+  le saut entre étapes (340ms) puis désactivée → le halo colle à l'élément pendant
+  le scroll au lieu de "flotter". rAF/timer nettoyés dans _tourEnd.
+
+[CALCULATRICE BUDGET — deploy @641 (build 2026-07-08 11:03)]
+  Bug : sur la DERNIÈRE ligne du budget, le pad calculatrice débordait de l'écran.
+  CAUSE : hauteur supposée 360px codée en dur dans _bcpOpen — la hauteur réelle
+  mobile (boutons 26px, padding 16) est bien supérieure → le test de bascule
+  au-dessus/en-dessous se trompait.
+  FIX : dimensions RÉELLES mesurées (offsetWidth/Height après .visible), bascule
+  au-dessus du champ si pas de place dessous, sinon calé en bas d'écran (clamp).
+  + CSS : max-height calc(100vh-16px) + overflow-y auto (écran minuscule → pad
+  défilant, jamais coupé).
+
+[❓ CONTEXTUELS SAISIE + BANQUE — deploy @642 (build 2026-07-08 11:08)]
+  Boutons ❓ (classe .help-spot-inline : pastille dorée 26px desktop / 52px mobile)
+  lançant la visite guidée DEPUIS l'onglet :
+  - Saisie : dans la colonne d'actions (après "＋ File d'attente") → _tourStart('saisie')
+  - Banque : dans la toolbar (après "＋ Ajouter transaction") → _tourStart('rapprochement')
+  - Budget : déjà en place (@639)
+  → les 3 onglets principaux ont leur aide contextuelle in situ.
+
+[CATALOGUE DE VISITES — deploy @643 (build 2026-07-08 14:10)]
+  Demande : visites guidées pour TOUTES les fonctions, choix onglet → sous-fonction,
+  puis RETOUR automatique à l'écran d'origine.
+  - Bouton "🎬 Visites guidées" en tête de l'Aide → modal #tourCatalogModal :
+    catalogue à 2 niveaux (_TOUR_CATALOG, accordéon par onglet, boutons ▶ par
+    sous-fonction)
+  - 10 NOUVEAUX parcours (total 14) : ventilation (avec cleanup end→disableSplitMode),
+    banqueFiltres, attendus, epargne (5 étapes), dashboard, tresorerie (via
+    _showSuiviTab), paramCategories, paramComptes, paramPrefs, paramPlans
+  - RETOUR À L'ORIGINE : _tourCaptureLocation() mémorise l'écran affiché au lancement
+    (y compris le sous-onglet Paramètres, ex: l'Aide) → _tourEnd(skipRestore?) exécute
+    cleanup de la visite puis restore. _tourStart nettoie l'ancienne visite SANS
+    restaurer (skipRestore=true).
+  ⚠️ Maintenance : nouveau parcours = entrée dans _TOURS + _TOUR_CATALOG ;
+  si un layout/id change, vérifier les sélecteurs des visites concernées.
+
+[FIX CATALOGUE + INIT — deploy @644 (build 2026-07-08 14:23)]
+  - Accordéon du catalogue non navigable (signalé) → remplacé par une LISTE PLATE
+    groupée (.tour-cat-group en-têtes + .tour-cat-item boutons pleine largeur,
+    tout visible, scroll simple) — aucune interaction de dépliage qui puisse coincer
+  - Timeout au chargement (signalé, écran "Impossible de charger l'app") : le 1er
+    appel après un déploiement = démarrage à froid GAS parfois > 20s → l'init fait
+    désormais une SECONDE tentative automatique silencieuse avant la bannière
+    d'erreur (flag window._initRetried, remis à zéro au succès). Message d'erreur
+    actualisé (2 tentatives).
+
+[FIX CRASH SUIVI + PASSE LISIBILITÉ MOBILE — deploys @645 + @646 (08/07 soir)]
+  - [BUG CRITIQUE @645] "Maximum call stack size exceeded" au chargement (vu sur
+    plan Thierry, onglet Suivi) : récursion synchrone infinie
+    renderSuiviTable ↔ _loadBudgetForPeriod. Cause racine : caches désynchronisés —
+    invalidateBudgetCache vidait _budgetCache mais PAS window._budgetPeriodTotals ;
+    _loadBudgetForPeriod court-circuitait alors en rappelant le callback en
+    synchrone sans jamais remplir le cache buckets dont renderSuiviTable a besoin.
+    Correctif double : (1) invalidateBudgetCache purge les DEUX caches (même
+    portée période/global) ; (2) le raccourci synchrone de _loadBudgetForPeriod
+    exige désormais total connu ET _budgetCache présent, sinon fetch GAS (async).
+    RÈGLE : _budgetCache et _budgetPeriodTotals doivent rester synchrones.
+  - [MOBILE @646] Passe lisibilité (audit #25, points a-f sauf refonte cartes) :
+    · Sous-totaux Banque : labels 10→13px, valeurs 15→20px, padding/sep agrandis
+    · Trésorerie : classes st-head/st-amt/st-note/st-per/st-val ajoutées au HTML
+      généré (les styles inline restent pour desktop) + surcharges mobiles
+      !important (en-têtes 13px, montants 17px, notes 13px) + min-width 660px
+      et scroll horizontal sur #suiviTabTreso
+    · Sous-onglets Suivi 17px + titre 24px (mobile)
+    · Légende donut .bcl-item 15px, points 12px
+    · Volet détail par compte .das-name 14px / .das-val 15px
+    · Barre 💾 épargne remontée à +158px (au-dessus de la nav pill, fin du
+      chevauchement — solde définitivement le point #19)
+
+[FIX TRÉSORERIE MOIS FANTÔME — deploy @647 (08/07 soir)]
+  - Analyse xlsx utilisateur (Backend BudgetApp) : Économisé +650 juillet vérifié
+    exact (cumul réel fin juin 475 + budgété juillet 475 − retrait réel 300).
+    +5126,80 en août = 4476,80 budgétés sur Economies (données utilisateur, pas un bug).
+  - [BUG] 10/2026 absent du tableau Trésorerie : le mois avait 23 lignes de budget
+    (dont retrait épargne planifié −750,89) mais AUCUNE TX/prévision → les lignes
+    n'étaient créées que depuis TX+prévisions. Chaîne de soldes 09→11 directe,
+    ~1364 € de sorties budgétées d'octobre ignorées, cumul épargne novembre faux.
+  - Correctif : displayRows = plage CONTINUE de mois, du courant au dernier mois
+    utile (max TX/prévisions ∪ budgets déjà chargés > 0, garde-fou +24 mois).
+    Les trous sont comblés avec valeurs à 0 (byPeriod fallback) et leurs budgets
+    chargés par la boucle silencieuse existante.
+  - Limitation connue : un budget saisi sur un mois AU-DELÀ du dernier mois ayant
+    une TX/prévision ne crée pas de ligne au 1er rendu (apparaît si le budget
+    a déjà été visité/chargé dans la session).
+  - À FAIRE (data hygiene, signalé) : withdrawFromProject écrit period que Sheets
+    auto-convertit en DATE (2026-07-01 au lieu de "07/2026") — _normalizePeriodKey
+    compense côté front, mais forcer l'écriture texte serait plus propre.
+
+[FIX PÉRIODE 02/2027 + RÉPARATION FEUILLE PERIODES — deploy @650 (04/08/2026)]
+  - [BUG signalé] Retour sur l'onglet Budget → le select affichait "Feb-27" au
+    lieu du mois en cours de consultation. Cause : la feuille Periodes contenait
+    des lignes ajoutées à la main par étirement, avec labels 2027 mais IDS 2026
+    RÉUTILISÉS (ex. "08/2026 | Feb-27") et dates fausses. buildPeriodSelect
+    cochait toutes les options du même id → la dernière (mauvais label) gagnait.
+  - Correctifs (triple) :
+    1. GAS _repairPeriodsOnce() : one-shot (flag ScriptProperties
+       "periodsRepairV1", sous _withScriptLock) — régénère la feuille Periodes
+       en plage continue propre min→max détectés (ids depuis les ids valides ET
+       les labels parsés EN/FR), ids forcés en format TEXTE, labels FR, dates
+       début/fin correctes. S'exécute au 1er chargement après déploiement.
+    2. GAS _getPeriods : dédoublonnage par id (garde la 1re occurrence).
+    3. Frontend buildPeriodSelect : même ceinture de dédoublonnage.
+  - [HYGIÈNE, en attente depuis @647] withdrawFromProject : appendRow → setValues.
+    appendRow interprète "07/2026" comme une saisie utilisateur → Sheets le
+    convertissait en date (2026-07-01). setValues écrit brut (comme addTransaction).
+    Les anciennes cellules date restent (normalisées côté front, sans effet).
+  - GitHub : le pipeline ne pousse QUE vers Apps Script (clasp) — aucun dépôt git
+    local. Le raccourci GitHub de l'utilisateur = page lanceur avec icône
+    (l'app GAS ne peut pas fournir d'apple-touch-icon) → rien à synchroniser,
+    l'app servie est toujours la dernière version déployée.
+
+[SAUVEGARDE STABLE + 2 AUDITS — 05/08/2026 (aucun code modifié)]
+  🛟 POINT DE RESTAURATION : Old/BACKUP_STABLE_@661_2026-08-05/
+     Contient les 4 fichiers de travail + les 2 fichiers réellement déployés,
+     les empreintes SHA-256 et LIRE-MOI_RESTAURATION.md (procédure complète en
+     3 options : locale / GitHub / versions Apps Script).
+     Tag GitHub : stable-@661 (commit b0824e2).
+     ⚠️ EN CAS DE BUG APRÈS UN DÉPLOIEMENT : suivre ce LIRE-MOI, option A.
+  📄 Support/AUDIT_NETTOYAGE_2026-08-05.md
+     17 fonctions frontend mortes + 8 GAS (hors doGet/getVersion) + _dbRenderBarChart
+     + confirmLockAll → ~650 lignes supprimables sans changement fonctionnel.
+     CSS = 4631 lignes (28 % du frontend), sélecteurs redéclarés jusqu'à 7 fois :
+     refonte globale DÉCONSEILLÉE (risque visuel > gain).
+     Étapes 1-3 recommandées, étape 5 (CSS) écartée.
+  📄 Support/AUDIT_PERFORMANCE_2026-08-05.md — v2 RECENTRÉE (retour utilisateur :
+     "la perf ce n'est pas que le pointage, c'est la vitesse d'enregistrement des
+     transactions, des modifs de budget, l'affichage du budget")
+     GOULOT n°1 = **getBudgetByPeriod** (272 lignes) : 1 lecture intégrale de
+     Transactions + 4 parcours, 1 lecture intégrale de Budgets + 4 parcours
+     = ~8 parcours complets PAR APPEL. Appelée par : affichage Budget, chaque
+     saisie, chaque modif budget, notif "reste à dépenser", Trésorerie (1×/mois
+     affiché), dashboard.
+     GOULOT n°2 = **une saisie = 3 allers-retours** : addTransaction (2 lectures
+     de validation + relecture de TOUTE la feuille en retour) PUIS
+     getBudgetByPeriod pour la notif PUIS getBudgetByPeriod ENCORE via loadBudget,
+     avec invalidateBudgetCache() entre les deux → 0 % de chance de cache.
+     GOULOT n°3 = modif budget : invalidateBudgetCache() SANS argument efface
+     toutes les périodes (la fonction accepte pourtant un paramètre).
+     PLAN (ordre acté) : 1) fusionner les 2 getBudgetByPeriod post-saisie
+     (−⅓ du temps de sauvegarde, risque faible) · 2) invalidation ciblée ·
+     3) validation sans relecture + retirer _safeReturnTx redondants ·
+     4) addTransaction renvoie la seule ligne créée · 5) getBudgetByPeriod en
+     2 passes (RISQUE ÉLEVÉ : cœur des calculs d'argent → session dédiée +
+     comparaison des chiffres avant/après) · 6) retours minimaux actions de masse
+     + TextFinder · 7) flush conditionnel · 8) chargement partiel (réservé).
+     Déjà bon : _catCache, caches budget, écritures batch, debounce recherche.
+  MÉTHODE actée : une optimisation = un déploiement = un test (pas de cumul).
+
+[POINTAGE INSTANTANÉ — deploy @661 (05/08/2026)]
+  Retour utilisateur : @660 marche mais il faut encore attendre ~3 s → "pour un
+  misclick c'est long et frustrant". Juste : le blocage n'avait plus de raison
+  d'être puisque l'écriture serveur est idempotente.
+  FRONTEND — plus AUCUN verrou bloquant (_clearedInFlight supprimé) :
+    · le clic bascule l'affichage immédiatement, toujours accepté ;
+    · envoi DIFFÉRÉ de 400 ms (debounce) → un aller-retour, un misclick corrigé
+      aussitôt n'en génère aucun ;
+    · modèle "dernier clic gagne" : `window._clrSend[id] = {desired, seq, inFlight}`.
+      Une réponse dont le `seq` n'est plus le dernier est IGNORÉE (pas de rollback
+      qui ferait clignoter la ligne) et l'état final est renvoyé à la réponse ;
+    · rollback + toast uniquement si l'échec concerne l'intention courante ;
+    · refus "locked" du serveur → marque la ligne verrouillée + toast.
+  GAS — toggleCleared ne charge plus la feuille entière pour trouver la ligne :
+    recherche ciblée `createTextFinder(id).matchEntireCell(true)` sur la SEULE
+    colonne id, puis une lecture de la ligne (locked + cleared) et un setValue.
+    Coût passé de "toute la feuille" à quelques cellules.
+  → Clic ressenti instantané, rafales possibles, aucune attente imposée.
+
+[CAUSE RACINE POINTAGE = PERF — deploy @660 (05/08/2026)] ✅ RÉSOLU
+  Faits obtenus de l'utilisateur (décisifs) : (a) le pointage EST bien enregistré
+  (il persiste après rechargement) · (b) le 2e clic FONCTIONNE si l'on attend ~10 s
+  · (c) toast "⏳ enregistrement en cours" si l'on reclique avant.
+  → L'écriture aboutit ; c'est la RÉPONSE qui tardait plusieurs secondes, laissant
+  le verrou anti-double-clic posé. Cause : `toggleCleared` relisait TOUTE la feuille
+  (_getAllTransactions) + 2 sérialisations JSON pour... cocher une case. Or depuis
+  @657 le frontend n'utilise plus le contenu de cette réponse.
+  CORRECTIF : toggleCleared renvoie un payload MINIMAL
+  `{ok, id, cleared, undoLabel}` (+ `{error:"locked"}` / `{error:"notfound"}`,
+  nouvelle ceinture serveur sur le verrouillage). Plus de relecture de feuille.
+  Frontend : applique `res.cleared`, gère le refus "locked" (toast + resync de la
+  ligne) et utilise `res.undoLabel` → le 2e aller-retour `_checkUndoAvailable()`
+  est supprimé (2 appels GAS → 1).
+  LEÇON : un payload "je renvoie tout l'état" sur une action à haute fréquence se
+  paie en latence, et se manifeste par des symptômes trompeurs (verrou bloqué,
+  "rien ne se passe"). Candidats au même traitement si besoin : toggleLocked,
+  toggleClearedMultiple, reconcileTransactions (renvoient aussi tout).
+
+[FIX POINTAGE (suite) — deploys @658 + @659 (05/08/2026)]
+  DIAGNOSTIC : @657 (flush) n'a rien changé. Questions posées à l'utilisateur →
+  "le rond ✓ sur la ligne" + "rien du tout, aucune réaction" + PC ET mobile.
+  "Aucune réaction" = retour SILENCIEUX. @658 a rendu les 3 refus explicites
+  (toast) → l'utilisateur a répondu « ENREGISTREMENT EN COURS », donc le verrou
+  `_clearedInFlight` restait posé : l'appel GAS ne revenait JAMAIS (aucun des deux
+  handlers appelé) → très probablement une EXCEPTION dans le code synchrone
+  (_patchRow / computeSoldes / computeSubtotal) AVANT l'émission de l'appel :
+  google.script.run n'était jamais atteint, le verrou restait, le pointage n'était
+  jamais enregistré. NB : computeSoldes/setVal et computeSubtotal accèdent à des
+  éléments DOM sans vérifier leur existence → TypeError possible.
+  CORRECTIFS @659 (résilience, indépendants de la cause exacte) :
+    1. Le bloc d'affichage optimiste est en TRY/CATCH → l'appel GAS est TOUJOURS
+       émis, même si l'affichage échoue ; l'erreur s'affiche en toast (visible).
+    2. `_clearedInFlight` devient une MAP id→timestamp : un verrou est ignoré au
+       bout de 6 s (avant : Set, blocage définitif). Filet 25 s conservé.
+    3. Les handlers de réponse sont eux aussi en try/catch, et l'ÉCHEC (muet
+       jusqu'ici, il annulait juste la coche) affiche le message d'erreur GAS.
+    4. @658 : les 3 refus silencieux expliquent désormais leur raison
+       (verrouillée → invite à cliquer 🔓 · écriture en cours · ligne obsolète →
+       actualisation). Nouveau helper générique `_toast(msg, ms)` + CSS
+       `.wimm-toast` (mobile au-dessus de la nav, desktop bottom 28px).
+  RÈGLE : aucun refus d'action utilisateur ne doit être silencieux, et aucun appel
+  serveur ne doit dépendre de la réussite du rendu.
+
+[FIX POINTAGE "impossible de cliquer 2 fois de suite" — deploy @657 (05/08/2026)]
+  - CAUSE RACINE : lecture GAS périmée. Seul updateTransaction appelait
+    SpreadsheetApp.flush() avant de relire (avec le commentaire explicite "sans
+    flush GAS peut retourner l'ancienne ligne") ; toggleCleared et TOUTES les
+    autres mutations relisaient la feuille sans flush → la réponse pouvait
+    contenir l'état AVANT écriture. Le frontend faisait confiance à cette réponse
+    (`tx.cleared = srvTx.cleared`) → la ligne revenait à son état précédent, et le
+    2e clic semblait sans effet. Un changement de filtre compte forçait un
+    rafraîchissement complet, d'où "si je ne change pas de banque".
+  - Correctifs (3, complémentaires) :
+    1. SYSTÉMIQUE : `try { SpreadsheetApp.flush(); } catch(e) {}` en tête de
+       _getAllTransactions, _getAllPrevisions ET getBudgetByPeriod → toutes les
+       relectures après écriture sont fiables, pour TOUS les appelants (une seule
+       fonction à maintenir au lieu de ~15 mutations).
+    2. FRONTEND : handleToggleCleared ne relit plus l'état dans la réponse mais
+       applique `tx.cleared = desired`. L'écriture serveur étant idempotente
+       (état CIBLE), la vérité après un succès EST l'état demandé → le pointage
+       devient insensible à toute latence/péremption de lecture.
+    3. FILET : timer 25 s qui libère `_clearedInFlight` si aucun handler n'est
+       appelé (réponse perdue) — une ligne ne peut plus devenir impointable à vie.
+  - RÈGLE : toute nouvelle relecture de feuille juste après une écriture doit
+    passer par ces 3 fonctions (elles flushent) ou appeler flush() explicitement.
+
+[RECO AUDIT UNDO + ÉDITION FILE D'ATTENTE — deploy @655 (04/08/2026)]
+  RECO 1 — _clearUndo() en tête des 27 mutations NON annulables (transferBudget,
+    withdrawFromProject, saveProjectAllocations, projets, lockAllCleared, comptes
+    (5), plans (5 dont saveCurrentPlan/switchPlanAndLoad → cloisonne aussi les
+    plans), tiers (3), catégories (4), groupes (3)). Le bouton s'éteint au lieu de
+    proposer une action antérieure → PIÈGE DU §5 DE L'AUDIT SUPPRIMÉ.
+    NB : clear en ENTRÉE de fonction, donc une mutation qui échoue en validation
+    consomme aussi le snapshot (direction conservatrice, jamais de faux undo).
+  RECO 2 — FILE D'ATTENTE ANNULABLE : _addBatchTransactionsImpl collecte les ids
+    (_batchTxIds) ET les ids de prévisions (_batchPrevIds), sauvegarde
+    _saveUndoSnapshot("addTransaction", {id, ids, prevIds}) et renvoie undoLabel.
+    Le case "addTransaction" étendu supprime aussi les prevIds → le lot entier
+    (TX + prévisions) s'annule en 1 cran.
+  RECO 3 — bouton branché sur les actions oubliées, SANS changer la forme des
+    retours GAS (risque zéro) : _checkUndoAvailable() ajouté après ventilation
+    (lines.length > 1), addPrevision (3 chemins : file, saisie, modal) et
+    deletePrevision. toggleLocked/updatePrevision restent sans appelant frontend.
+
+  ÉDITION DANS LA FILE D'ATTENTE (demande utilisateur) :
+  - Nouvel état _queueEditIdx + fonctions editQueueItem(idx) / cancelQueueEdit()
+    / _syncQueueBtnLabel() / _setTpeValue(el, val) (écrit un montant en respectant
+    l'état interne _tpeCents des champs TPE).
+  - Clic sur une ligne de la file OU sur ✏️ → l'élément est rechargé dans le
+    formulaire (sens, date, compte, bénéficiaire, catégorie, description, montant ;
+    les VENTILATIONS sont reconstruites ligne à ligne via buildSplitLine).
+  - Le bouton "＋ File d'attente" devient "✓ Mettre à jour" (id=btnAddQueue) et
+    addToQueue REMPLACE _txQueue[_queueEditIdx] au lieu d'empiler.
+  - Bandeau .queue-edit-banner + surbrillance .is-editing sur l'élément édité.
+  - removeFromQueue décale/annule proprement _queueEditIdx.
+  - submitQueue REFUSE d'envoyer si une modification est en cours (message clair) —
+    sinon les changements du formulaire seraient perdus silencieusement.
+  - CSS : .queue-item-edit / .queue-edit-banner / .btn-queue-edit-cancel avec
+    variantes desktop compact (18px) et mobile (36px, textes 15-16px).
+  - Sync GitHub : commit abec243.
+
+[AUDIT UNDO GLOBAL — 04/08/2026 (aucun code modifié)]
+  Document : Support/AUDIT_UNDO_2026-08-04.md
+  - Moteur SAIN : 15 actions sauvegardées, les 15 ont un `case` (aucun snapshot
+    orphelin). 3 conditions pour qu'une action soit annulable : snapshot + case +
+    bouton informé (undoLabel OU _checkUndoAvailable) — c'est la 3e qui pèche.
+  - ✅ 10 complètement annulables (ajout/modif/suppr TX, virement, suppr virement,
+    pointage simple+multiple, suppr multiple, duplication, budget, réconciliation)
+  - ⚠️ 5 annulables côté serveur mais JAMAIS proposées : ventilation
+    (addSplitTransaction, snapshot avec ids déjà géré !), toggleLocked,
+    addPrevision, updatePrevision, deletePrevision
+  - ❌ Sans snapshot : addBatchTransactions (FILE D'ATTENTE — le plus gênant),
+    transferBudget, withdrawFromProject, saveAllocations, projets, lockAllCleared,
+    tous les Paramètres (catégories/groupes/tiers/comptes/plans)
+  - 🪤 PIÈGE MAJEUR : une mutation non annulable ne vide PAS le snapshot → le
+    bouton garde le libellé d'une action ANTÉRIEURE et l'annulation revient sur
+    autre chose. Aggravants : `ts` écrit mais jamais vérifié (aucune péremption,
+    un snapshot de plusieurs jours reste proposé après rechargement) et
+    undo_snapshot en ScriptProperties = PARTAGÉ entre utilisateurs et plans
+    (aucun contrôle plan_id dans les cases).
+  - Reco 1-2-3 (effort faible, gros bénéfice) : _clearUndo() dans les mutations
+    non annulables · snapshot sur addBatchTransactions · undoLabel sur les 5 du §3.
+
+[FIX UNDO MODIF TRANSACTION — deploy @654 (04/08/2026)]
+  - Après @653 : undo OK sur modification de budget, mais sur modification de
+    TRANSACTION le bouton ne s'activait même pas. Cause : updateTransaction était
+    le SEUL chemin dont les 3 retours n'étaient pas assainis (ni _safeReturnTx ni
+    _safeReturnObj) alors qu'il renvoie des champs BRUTS (description, debtor,
+    linked_prevision_id, amount…) que Sheets peut avoir convertis en Date.
+    → retour null → le handler frontend sortait EN SILENCE (`if (!result) {
+    hideSpinner(); return; }`) sans appeler afterMutation → aucun undoLabel,
+    bouton jamais activé. La modification était bien écrite en base.
+  - Correctifs :
+    1. RACINE DÉFINITIVE : _getAllTransactions ET _getAllPrevisions terminent par
+       _safeReturnTx(rows) → TOUT appelant est protégé, même sans wrapper. Ceci
+       clôt la classe de bug "Date brute dans un retour" pour de bon.
+    2. updateTransaction : 3 retours (locked / transfer / succès) via _safeReturnObj.
+    3. updateTransaction reçoit son VERROU manquant (_withScriptLock +
+       _updateTransactionImpl) — il était absent alors que les 11 autres mutations
+       l'avaient (drift entre la doc de blindage S31 et le code réel).
+    4. Frontend : le `if (!result)` silencieux affiche désormais un message et
+       resynchronise (plus d'échec invisible).
+  - Sync GitHub : commit 4eaa94a.
+
+[FIX UNDO "RIEN À ANNULER" — deploy @653 (04/08/2026) — CAUSE RACINE]
+  - Après @652 le bouton s'activait bien, mais l'annulation répondait toujours
+    "Rien à annuler". Ce n'était PAS le snapshot (getUndoInfo le voyait) :
+    undoLastAction renvoyait `{transactions: _getAllTransactions(...)}` SANS
+    _safeReturnTx, et _getAllTransactions renvoyait `period: row[periodIndex]`
+    BRUT. Or la feuille contient des period en DATE (anciens retraits d'épargne
+    écrits via appendRow, cf. @650) → objet Date dans le retour → sérialisation
+    google.script.run échoue → le frontend reçoit `null` → branche `if (!result)`
+    qui affichait à tort "Rien à annuler." L'annulation ABOUTISSAIT en base
+    (snapshot vidé) sans que l'UI ne se rafraîchisse → symptôme "ne marche pas".
+  - Correctifs (3 niveaux) :
+    1. RACINE : helper _periodToText(v) — period TOUJOURS renvoyé en texte
+       "MM/YYYY" (Date → formatPeriod) dans _getAllTransactions ET
+       _getAllPrevisions. Élimine la classe de bug pour TOUS les retours.
+    2. CEINTURE : helper _safeReturnObj(obj) (JSON round-trip, renvoie
+       {error:...} si échec) appliqué aux 5 retours de _undoLastActionImpl.
+    3. HONNÊTETÉ UI : `if (!result)` n'affiche plus "Rien à annuler" mais
+       "Réponse vide du serveur — l'annulation a peut-être abouti" + resync
+       (_checkUndoAvailable + _refreshAll).
+  - RÈGLE (généralise #2/#5) : tout retour GAS contenant des TX/prévisions passe
+    par _safeReturnTx / _safeReturnObj, et aucune valeur de cellule brute
+    (period, date…) ne doit sortir sans conversion texte.
+  - Sync GitHub : commit 6ce65c3.
+
+[FIX BOUTON ANNULER DESKTOP — deploy @652 (04/08/2026)]
+  - [BUG signalé "mon bouton annuler ne fonctionne toujours pas"] Régression
+    introduite par la refonte du header : _setUndoBtn() ne mettait à jour QUE
+    #undoNavBtn (bulle flottante mobile), jamais #undoTopBtn (↺ du header desktop).
+    Or #undoTopBtn a `pointer-events:none` sans la classe .available → sur desktop
+    le clic ne déclenchait STRICTEMENT RIEN (bouton grisé en permanence).
+    Le backend (getUndoInfo/undoLastAction) était sain.
+  - Correctifs : _setUndoBtn boucle sur les DEUX ids · doUndo lit l'état via
+    querySelector("#undoNavBtn.available, #undoTopBtn.available") · doUndoConfirmed
+    appelle _setUndoBtn(null) au lieu de vider seulement la bulle.
+  - RÈGLE : tout état visuel du undo doit passer par _setUndoBtn (jamais de
+    classList direct sur un seul bouton). Idem si un 3e point d'entrée est ajouté.
+  - Sync GitHub : commit 097a713.
+
+[TRÉSORERIE ÉTENDUE AUX MOIS BUDGÉTÉS — deploy @651 (04/08/2026)]
+  - [Signalé] Le tableau s'arrêtait à septembre alors que octobre/novembre ont du
+    budget : la plage allait jusqu'au dernier mois ayant une TX/prévision (la
+    prévision de novembre ayant été consommée, plus rien après septembre).
+    C'était la limitation résiduelle documentée au fix @647.
+  - Nouvelle fonction GAS getBudgetPeriods() : liste des périodes ayant ≥ 1 ligne
+    de budget ≠ 0 pour le plan actif (négatifs comptés = retraits planifiés).
+  - renderSuiviTable : charge cette liste une fois (window._suiviBudgetPeriods,
+    re-render au retour) et étend _lastKey avec (garde-fou +24 mois).
+    invalidateBudgetCache remet la liste à undefined → rechargée après toute
+    modification de budget / changement de plan.
+  - Incident deploy : limite Google de 200 VERSIONS Apps Script atteinte →
+    l'utilisateur a supprimé 175 anciennes versions via Historique du projet
+    (Extensions → Apps Script → horloge → ⋮ Supprimer). Marge restante ~175.
+  - Sync GitHub : commit 8e433e9 (snapshots = @651).
+
+[SYNC GITHUB — 04/08/2026 (aucun deploy, dépôt TheRizr31/wimm)]
+  - Analyse du dépôt : index.html = page lanceur GitHub Pages (icône apple-touch
+    + redirect standalone vers l'URL GAS, MÊME deploymentId que le pipeline →
+    sert toujours la dernière version, aucun entretien requis). Image3.png = icône.
+  - `Html.txt` + `Code cs.txt` (snapshots du code, périmés depuis mars 2026)
+    resynchronisés avec la version @650 — commit 2249324. Push réussi via les
+    credentials Windows déjà enregistrés.
+  - Clone de travail conservé : `_wimm_gh_sync/` (pour resynchroniser à chaque
+    deploy : copier les _TEST → Html.txt / "Code cs.txt", commit, push).
+  - Lanceur et icône volontairement NON modifiés (zéro risque).
+  - Note : la réparation Periodes @650 reste sans danger — l'utilisateur a aussi
+    corrigé la feuille à la main ; le one-shot la normalisera simplement (ids
+    texte, labels FR, plage continue) à son premier déclenchement.
+
+[CANVAS MOBILE (#24) — deploy @649 (08/07 soir)]
+  - _dbRenderSavingsCurve : variante mobile (isMobileSv < 1024) — H 260, padL 68,
+    axes 14px, valeur finale bold 19px, points 4.5px, trait 3px, un label X sur
+    3-4 pour éviter le chevauchement. Message vide 17px.
+  - _showEmpty (Budget vs Dépensé) : 16px sur mobile.
+  - _drawBudgetChart (mini-donut onglet Budget) : 170px mobile (110 desktop),
+    centre bold 17px mobile, et ajout du scaling devicePixelRatio (net sur Retina,
+    il était flou partout avant).
+  - Note : _dbRenderBarChart (dbBarCanvas) = code mort sans appelant (candidat
+    nettoyage P3 avec computeDisponibleFrontend/openRowMenu).
+
+[FIX ÉCONOMISÉ MOIS COURANT — deploy @648 (08/07 soir)]
+  - L'utilisateur a démonté la formule avec son cas réel : dépôt de 475 fait en
+    JUIN en réel (budget juin −191 → report −475), puis 475 assignés en JUILLET
+    pour rembourser ce report (restant juillet = 0). L'ancienne formule
+    "budgété + retraits réels" comptait les 475 DEUX FOIS (réel juin + budgété
+    juillet) → cumul 650 au lieu de 475.
+  - Nouvelle formule mois courant : Économisé = RÉEL net du mois (dépôts −
+    retraits) + RESTE À VIRER de l'enveloppe épargne (Σ max(0, remaining) des
+    catégories épargne). Le remaining intègre le report → plus de double
+    comptage, et cohérent avec la colonne Sorties (réel + reste à dépenser).
+    Passé = réel net (inchangé) · Futur = budgété signé (inchangé).
+  - _savingsBudgetedCurrent supprimé (plus utilisé) ; note sous le tableau
+    mise à jour ("réel + reste à virer (mois en cours)").
+  - Vérif sur données utilisateur : juillet réel 0 (300−300) + restant 0
+    → cumul fin juillet 475 ✓ (attendu par l'utilisateur).
+
+[NETTOYAGE ROADMAP + AUDIT MOBILE — 08/07/2026 (aucun code modifié)]
+  - Roadmap nettoyée : #0/#8/#15 cochés (réalisés), #17 partiel, #11/#14/#20/#21
+    vérifiés dans le code → corrigés, #19 largement résolu (reste chevauchement
+    cosmétique barre 💾), #22/#23 reportés (décision utilisateur)
+  - Priorités utilisateur confirmées : #4 report budget par catégorie,
+    #6 détail revenus attendus depuis Budget
+  - Audit lisibilité mobile complet → nouvelle entrée #25 (trésorerie inline 11px
+    = principal chantier, sous-totaux Banque 10px, légende donut, drawer comptes)
+
+[RESTE À FAIRE]
+  Refonte layout (maquette) étape 2 : sidebar permanente par défaut (drawer épinglé
+    restylé) · étape 3 : saisie en carte verticale + file d'attente latérale
+  Phase 2d (optionnel) : cartes soldes par compte en haut de l'onglet Banque
+    (cliquables = filtre)
+  Confort (non critiques) : persistance localStorage de la file d'attente,
+    undo multi-crans, validation account_id dans le bandeau intégrité
+
+================================================================================
+  ROADMAP — FONCTIONNALITÉS PLANIFIÉES
+================================================================================
+Dernière mise à jour : 2026-07-08 (nettoyage : cochage du réalisé, priorités validées
+par l'utilisateur — GARDER report budget par catégorie + détail revenus attendus ;
+analyses récurrentes/économies REPORTÉES à plus tard)
+
+  [x] 0. COMPTES BANCAIRES MULTIPLES — TERMINÉ (Phases 1+1bis+1ter @619,
+          Phase 2+2b @621-622, Phase 3 virements @625, retrait épargne @630).
+          Spec : Support/SPEC_Comptes_Bancaires.md
+          Reste UNIQUEMENT la Phase 2d optionnelle (cartes soldes par compte
+          en haut de Banque, cliquables = filtre).
+
+  [ ] 1. Modals → Bottom sheets
+          Tous les modals doivent monter depuis le bas (style iOS).
+          Poignée de drag, fond semi-transparent.
+
+  [ ] 2. Bouton "Économiser"
+          Modal avec curseurs par catégorie (zéro-sum → épargne).
+          Animation de célébration + rappel virement bancaire.
+
+  [ ] 3. Bouton "Utiliser l'épargne"
+          Symétrique à Économiser. Friction volontaire.
+          Curseurs de répartition par catégorie.
+
+  [ ] 4. Report budget mensuel PAR CATÉGORIE  ← PRIORISÉ (08/07/2026)
+          Bouton "Reprendre le budget de [mois précédent]".
+          Modal avec checkbox par catégorie → copyBudgetFromPrevious filtré.
+          (Le 📋 Reporter actuel copie TOUT — il manque le choix par catégorie.)
+
+  [ ] 5. Feedback haptique iOS
+          Sur les mutations si navigator.vibrate disponible.
+
+  [ ] 6. Détail des revenus attendus depuis l'onglet Budget  ← PRIORISÉ (08/07/2026)
+          Clic sur la Projection (ou section dédiée) → affiche le détail
+          des prévisions non reçues : date, description, montant attendu.
+          Permettre de les lier/clôturer directement depuis cet écran.
+
+  [ ] 7. Ajout transaction depuis l'historique de catégorie (onglet Budget)
+          Bouton "＋ Ajouter" dans le modal historique d'une catégorie.
+          Pré-remplissage automatique : catégorie = catégorie cliquée,
+          période = période budget en cours, montant vide.
+          Ouvre le modal d'ajout transaction habituel avec ces champs verrouillés.
+
+  [x] 8. FAQ / Aide dans les Paramètres  ← RÉALISÉ (et dépassé) @635-@644
+          Onglet ❓ Aide : 10 sections, recherche à mots-clés scorée,
+          14 visites guidées interactives (catalogue 🎬), boutons ❓ contextuels
+          Saisie/Budget/Banque. + TUTORIEL_WIMM.md + DIDACTICIEL_WIMM.html (Support/).
+
+  [ ] 9. Ajout transaction via cellule "Dépensé" (Budget)
+          Clic sur le montant dépensé d'une catégorie → ouvre modal d'ajout
+          transaction avec catégorie pré-remplie et verrouillée.
+
+  [ ] 10. Indicateur visuel commentaire présent
+          Icône ou point coloré sur la ligne de catégorie si un commentaire
+          existe. Visible sans avoir à ouvrir le modal de note.
+
+  [x] 11. [BUG] Bouton "Annuler" transfert masqué par la nav bar (mobile)
+          ← CORRIGÉ (vérifié code 08/07) : #transfertModal .modal-buttons a un
+          padding-bottom safe-area-inset + 20px, .modal-large +56px.
+
+  [ ] 12. [BUG] Cycle de mise à jour — refresh non immédiat
+          Plusieurs éléments (modal transaction, modal transfert, etc.) ne
+          reflètent pas les changements avant actualisation complète.
+          Audit global du cycle re-render : identifier tous les endroits où
+          un forceRefresh / re-render local est manquant après mutation GAS.
+
+  [ ] 13. Copie budget → copie des commentaires ?
+          Vérifier si la fonctionnalité "Reprendre budget du mois précédent"
+          copie aussi les commentaires de catégorie. Décision à prendre :
+          oui (avec option "effacer les commentaires") ou non par défaut.
+
+  [x] 14. [BUG] Bouton "Soumettre tout" mobile sous la nav bar
+          ← CORRIGÉ (vérifié code 08/07) : .btn-queue-submit est sticky
+          bottom safe-area + 90px, au-dessus de la nav pill.
+
+  [x] 15. Multi-comptes  ← RÉALISÉ (doublon du point 0, voir ci-dessus)
+
+  [ ] 16. Compte épargne avec apports automatiques
+          Compte d'économies multiple (ex : compte Sabine).
+          Virement automatique simulé depuis le compte principal.
+          Transaction auto générée lors d'un "Économiser".
+
+  [~] 17. Tableau de bord épargne — PARTIELLEMENT couvert
+          La courbe d'épargne cumulée existe dans le tableau de bord (S26)
+          + hero total/projets dans l'onglet Épargne. Resterait : capital de
+          départ hors app + objectif cible global. Faible priorité.
+
+  [x] 18. Tableau de bord graphiques  ← RÉALISÉ S23b/S24/S26
+          Onglet dédié dans Suivi. KPIs + Donut + Barres + Budget vs Dépensé + Courbe épargne.
+          Cross-filtering, tooltips, DPR fix. Mobile layout de base validé S26.
+
+  [~] 19. [BUG] Barre d'assignement épargne inaccessible + champ montant masqué (mobile)
+          ← LARGEMENT RÉSOLU (vérifié code 08/07) : .savings-save-bar est en
+          z-index 400 (> nav 100) donc cliquable, et l'Undo est masqué dès
+          qu'un modal est ouvert (body:has). Cosmétique restant : la barre 💾
+          (bottom +72px) CHEVAUCHE visuellement la nav pill (~145px de haut)
+          → à remonter vers bottom +150px si gênant. À re-tester sur iPhone.
+
+  [x] 20. [BUG] Refonte bouton Undo — dysfonctionnement position
+          ← CORRIGÉ en S27 (vérifié code 08/07) : fixed bottom safe-area + 80px,
+          left 20px, masqué quand un modal est ouvert, pointer-events none
+          quand rien à annuler.
+
+  [x] 21. [BUG] Boutons "Direct" et "File d'attente" taille inégale (mobile)
+          ← CORRIGÉ (vérifié code 08/07) : règle mobile dédiée « taille
+          uniforme » (flex:1, min-height 62px, font 18px identiques).
+
+  [ ] 22. [REPORTÉ — décision utilisateur 08/07/2026] Détection automatique des dépenses récurrentes (Dashboard)
+          Analyse de la feuille Transactions sans tag manuel.
+          Algorithme : même bénéficiaire dans ≥3 mois distincts + montant
+          stable (±10%) + intervalle régulier (~30j / ~7j / ~365j).
+          Affichage tableau de bord : bénéficiaire, montant moyen, fréquence,
+          dernière occurrence, total mensuel estimé, projection annuelle.
+          Fonction GAS detectRecurring(). Nécessite ≥3 mois d'historique.
+
+  [x] 24. [MOBILE] Grossir les caractères des graphiques canvas sur mobile
+          ← CORRIGÉ @649. Donut/budget/cat charts étaient déjà adaptés (S26,
+          20-26px) ; les oubliés étaient la COURBE ÉPARGNE (axes 9px→14px,
+          valeur finale 10px→19px, hauteur 200→260, points/trait épaissis,
+          labels X espacés), les messages "vide" (12→16-17px) et le MINI-DONUT
+          de l'onglet Budget (110→170px mobile, centre 11→17px, + correction
+          devicePixelRatio : il était flou sur Retina même en desktop).
+
+  [x] 25. [MOBILE] Lisibilité — AUDIT CODE du 08/07/2026 → CORRIGÉ @646
+          Tous les points traités (a: tableau agrandi via classes st-* + scroll
+          horizontal ; b: sous-onglets 17px ; c: sous-totaux 13/20px ; d: légende
+          donut 15px ; e: drawer comptes 14/15px ; f: barre 💾 remontée +158px).
+          Option restante si le scroll horizontal Trésorerie déplaît : rendu
+          "cartes par mois" empilées (refonte du HTML de renderSuiviTable).
+          Déjà OK (vérifié) : dashboard KPIs (14/32px), aide (16px), acc-tag
+          (17px), saisie/banque/budget/épargne/paramètres (blocs +25% validés).
+
+  [ ] 23. [REPORTÉ — décision utilisateur 08/07/2026] Moteur d'analyse des dépenses — Audit & Économies
+          Ensemble de fonctions d'analyse des dépenses passées pour identifier
+          les leviers d'économies futurs. Exemples de modules :
+          - Comparaison mois N vs mois N-1 par catégorie (dérive détectée)
+          - Top 10 dépenses ponctuelles les plus élevées sur 12 mois
+          - Catégories où les dépenses dépassent systématiquement le budget
+          - Bénéficiaires jamais budgétés (dépenses non anticipées récurrentes)
+          - Taux d'épargne mensuel sur les 12 derniers mois
+          - Simulation : "si tu réduisais X de Y€, tu économiserais Z€/an"
+          Présenté sous forme de rapport ou onglet dédié "Analyse".
+
+================================================================================
+  FORMAT D'ENTRÉE
+================================================================================
+Chaque session doit documenter :
+  [DATE]          : Date de la session (YYYY-MM-DD)
+  [CONTEXTE]      : Objectif / demande de la session
+  [FICHIERS]      : Fichiers lus ou modifiés
+  [MODIFICATIONS] : Description précise des changements apportés
+                    → Fichier concerné (index.Html.txt ou Code_GS.txt)
+                    → Fonction / section modifiée
+                    → Nature du changement (bug fix, feature, refacto...)
+  [NOTES]         : Points d'attention, décisions techniques, questions ouvertes
+================================================================================
