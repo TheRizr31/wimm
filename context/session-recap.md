@@ -25,9 +25,25 @@ Machine Linux gratuite accessible depuis Safari sur iPhone, rattachée au compte
 
 ### Procédure pour la suite (le jeton est persistant)
 ```
-cd ~/wimm && git pull && bash deploy.sh
+cd ~/wimm&&git pull&&bash deploy.sh --publish
 ```
-puis coller la commande `clasp deploy` que le script affiche.
+Sans `--publish`, le script s'arrête avant publication et affiche la commande `clasp deploy` à coller.
+
+### Automatisation — GitHub Action (préparée, PAS encore activée)
+`.github/workflows/deploy.yml` : déclenchée par un push sur `main` touchant `Html.txt` / `Code cs.txt` / `deploy.sh`, ou manuellement via **Actions → Run workflow** (bouton utilisable sur mobile). `deploy.sh` publie tout seul quand `CI=true`.
+
+**Reste à faire pour l'activer** (tout est faisable depuis l'iPhone) :
+1. `github.com/settings/tokens` → *Generate new token (classic)* → portées **`repo`** + **`workflow`** → copier le jeton
+2. Dans Cloud Shell, une seule ligne (taper `GH_TOKEN='`, coller le jeton, taper `'` puis la suite) :
+   ```
+   GH_TOKEN='ghp_xxx' gh secret set CLASPRC_JSON --repo TheRizr31/wimm < ~/.clasprc.json
+   ```
+   `gh` est préinstallé dans Cloud Shell et chiffre le secret lui-même.
+3. Merger la branche dans `main` → ce merge déclenche le premier déploiement automatique
+
+**Sécurité** : le dépôt est public. Les secrets ne sont pas exposés aux PR de forks, mais quiconque aurait un accès en écriture pourrait lire le jeton via un workflow. Le jeton donne accès aux projets Apps Script et aux fichiers Drive créés par l'app.
+
+**Si l'Action échoue en authentification** : le refresh token a été révoqué (par ex. accès de clasp retiré dans le compte Google) → refaire l'autorisation dans Cloud Shell puis relancer l'étape 2.
 
 Le dossier personnel de Cloud Shell est sur disque persistant : `~/wimm` et `~/.clasprc.json` survivent aux redémarrages.
 
