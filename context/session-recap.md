@@ -1,45 +1,5 @@
 # WIMM? — Récapitulatif de session
 
-## 21/09/2026 — FONCTIONNALITÉ « SCÉNARIO » (simulation épargne)
-
-**Besoin exprimé** : « si je travaillais, combien je pourrais épargner en plus ? », **sans** dupliquer le plan ni recréer un profil.
-
-### Pourquoi la duplication de plan était une fausse piste
-`addPlan(name, copyFromPlanId)` ne copie que buckets, catégories et débiteurs — ni transactions, ni budgets, ni prévisions, et crée un compte vide. Un plan dupliqué part d'un solde nul : simulation sans intérêt. Et deux plans à alimenter divergeraient dès le premier jour.
-
-### Modèle de calcul retenu
-Reprend exactement les définitions du backend :
-- **Revenu du mois** = transactions de la catégorie « À assigner » sur la période, négation appliquée (convention WIMM : revenu = montant négatif)
-- **Budgets** = somme des `budgeted` par catégorie, hors « À assigner » (déjà exclue par `getBudgetByPeriod`) et **hors catégorie d'épargne** — celle-ci est le résultat, pas une entrée
-
-```
-Épargne possible = Revenu scénario − Budgets hors épargne (avec remplacements)
-Épargne en plus  = Épargne possible − budget actuel de la catégorie épargne
-```
-
-### Implémentation
-| Où | Quoi |
-|---|---|
-| `Code cs.txt` (fin) | `getScenarios()` / `saveScenarios(jsonStr)` + helper `_appMetaFind`. Stockage clé/valeur JSON dans **`AppMeta`**, feuille déclarée dans `SHEETS` mais jusqu'ici inutilisée. Une ligne par plan. |
-| `Html.txt` | Bloc CSS préfixé `scn-`, modale `#scenarioModal`, ~250 lignes de JS, bouton 🎬 Scénario dans la barre d'actions Budget |
-
-**Calcul 100 % côté navigateur** à partir de `allTransactions` et `window._lastBudgetData` : réponse instantanée, aucun aller-retour Apps Script. Le serveur n'est appelé que pour lire/écrire la liste des scénarios, **sur clic explicite** (conforme à « sauvegarde mais pas automatique »).
-
-### Sécurité de la modification
-- **439 lignes ajoutées, 0 supprimée** — aucune ligne existante touchée
-- Aucun `.sheet`, aucune bascule d'onglet, aucun `display:flex` structurel (leçon de mars respectée)
-- Classes CSS et identifiants préfixés, unicité vérifiée
-- Syntaxe validée (`node --check`) sur le backend et sur le JS extrait du frontend
-- Aucune écriture dans les données réelles : la simulation ne modifie ni transaction ni budget
-
-### À vérifier au test
-- Le bouton 🎬 apparaît dans la barre d'actions de l'onglet Budget
-- La modale s'ouvre, le revenu est pré-rempli avec le réel du mois
-- Si aucune catégorie d'épargne n'est définie dans les Réglages, un message le signale et la comparaison est neutralisée
-- L'enregistrement crée bien une ligne `scenarios_<plan_id>` dans la feuille AppMeta
-
-
-
 ## 21/09/2026 — REBASAGE SUR `main` @661 (le vrai code live)
 
 ### Le point le plus important : où vit le code
