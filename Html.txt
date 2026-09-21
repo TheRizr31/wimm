@@ -4647,6 +4647,44 @@
   .help-spot-inline { width: 26px !important; height: 26px !important; font-size: 12px !important; border-radius: 6px !important; }
 }
 
+    /* ============ MODE SCÉNARIO (fantôme) ============ */
+    /* Classes préfixées scn- : aucune interférence avec l'existant. */
+    .scn-bar {
+      position: fixed; left: 0; right: 0; z-index: 900;
+      top: 0;
+      display: none; align-items: center; gap: 10px;
+      padding: calc(env(safe-area-inset-top, 0px) + 8px) 14px 8px;
+      background: linear-gradient(90deg, #6366F1, #8B5CF6);
+      color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+    }
+    .scn-bar.visible { display: flex; }
+    .scn-bar-dot {
+      flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%;
+      background: #fff; animation: scnPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes scnPulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+    .scn-bar-info {
+      flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .scn-bar button {
+      flex: 0 0 auto; border: none; border-radius: 9px;
+      padding: 8px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .scn-bar .scn-b-save   { background: #fff; color: #4F46E5; }
+    .scn-bar .scn-b-save:disabled { opacity: .45; }
+    .scn-bar .scn-b-leave  { background: rgba(255,255,255,0.20); color: #fff; }
+    /* Le bandeau pousse le contenu vers le bas plutôt que de le recouvrir. */
+    body.scn-active .app { padding-top: 46px; }
+    @media (max-width: 1023px) {
+      body.scn-active .app { padding-top: 42px; }
+      .scn-bar-info { font-size: 13px; }
+      .scn-bar button { padding: 8px 10px; font-size: 13px; }
+    }
+    /* Repère visuel discret sur les montants simulés */
+    .scn-touched { box-shadow: inset 0 0 0 2px rgba(99,102,241,0.55) !important; border-radius: 8px; }
+
     </style>
 
 </head>
@@ -4855,6 +4893,7 @@
           <button class="btn-depassement" id="btnToggleProgress" onclick="_toggleProgressBars()" title="Afficher/masquer les barres de progression">📊</button>
           <button class="btn-copy-prev" onclick="copyFromPrevious()" title="Reporter les montants budgétisés du mois précédent">📋 <span class="btn-copy-txt">Report budget M-1</span></button>
           <button class="action-history-btn" onclick="_openActionHistory()" title="Historique des actions">🕐 <span class="btn-fold-txt">Historique</span></button>
+          <button class="btn-fold" onclick="_scnToggle()" title="Mode scénario : simuler sans rien enregistrer">🎬 <span class="btn-fold-txt">Scénario</span></button>
           <button class="btn-danger-sm" onclick="openResetBudgetModal()">🗑 RAZ</button>
           <button class="btn-budget-add" onclick="openAddModal()" title="Ajouter une transaction">＋<span class="btn-budget-add-txt"> Ajouter transaction</span></button>
           <button class="btn-fold help-spot-btn" onclick="_tourStart('budget')" title="Visite guidée de cet onglet">❓</button>
@@ -5920,6 +5959,25 @@
     <div class="modal-buttons">
       <button class="btn-cancel" onclick="closeResetBudgetModal()">Annuler</button>
       <button class="btn-delete" onclick="confirmResetBudget()">Confirmer RAZ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODE SCÉNARIO (fantôme) ============ -->
+<div id="scnBar" class="scn-bar">
+  <span class="scn-bar-dot"></span>
+  <span class="scn-bar-info" id="scnBarInfo">Mode scénario</span>
+  <button type="button" class="scn-b-save" id="scnBarSave" onclick="_scnCommit()">✓ Valider</button>
+  <button type="button" class="scn-b-leave" onclick="_scnLeave(false)">✕ Quitter</button>
+</div>
+
+<div id="scnConfirmModal" class="modal-overlay">
+  <div class="modal">
+    <h3>🎬 Quitter le scénario</h3>
+    <p id="scnConfirmText" style="font-size:14px;color:#555;line-height:1.6;margin:0 0 20px;"></p>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="_scnCancelLeave()">Rester</button>
+      <button class="btn-delete" onclick="_scnConfirmLeave()" style="background:var(--red);color:white;font-weight:600;">Abandonner</button>
     </div>
   </div>
 </div>
@@ -7068,6 +7126,7 @@ function _renderQueue() {
 }
 
 function submitQueue() {
+  if (_scnBlockTx()) return;
   if (!_txQueue.length) return;
   // Une modification en cours n'est pas encore appliquée à la file → ne pas l'envoyer en silence
   if (_queueEditIdx !== null) {
@@ -7352,6 +7411,7 @@ function _doSaveSplitTx(payload) {
 }
 
 function saveTransaction() {
+  if (_scnBlockTx()) return;
   const date = document.getElementById('date').value;
   const desc = document.getElementById('description').value;
 
@@ -8392,7 +8452,7 @@ function loadBudget(force, silent) {
   const period = document.getElementById("periodSelect").value;
   if (!period) return;
   // Reset batch (uniquement en mode non-silencieux)
-  if (!silent && _batchChanges && Object.keys(_batchChanges).length > 0) {
+  if (!silent && !_scnOn() && _batchChanges && Object.keys(_batchChanges).length > 0) {
     _batchChanges = {};
     document.getElementById("budgetBatchBar").classList.remove("visible");
   }
@@ -8423,6 +8483,12 @@ function loadBudget(force, silent) {
         orphanTxCount: Number(data.orphanTxCount) || 0,
         orphanTxSum:   Number(data.orphanTxSum)   || 0
       };
+      // Mode scénario : calque appliqué AVANT la mise en cache, pour que tout
+      // l'aval (Budget, projection, Suivi) voie les valeurs simulées.
+      if (_scnOn()) {
+        data.buckets    = _scnPatchBuckets(data.buckets, period);
+        data.disponible = Math.round(((Number(data.disponible) || 0) - _scnDispDelta(period)) * 100) / 100;
+      }
       _budgetCache[period] = { disponible: data.disponible, buckets: data.buckets, ts: Date.now(), meta: window._budgetMeta };
       // Toujours stocker _budgetCatDetails (même en mode silencieux / budget non visible)
       window._lastBudgetData = data.buckets;
@@ -8483,7 +8549,8 @@ function _loadBudgetForPeriod(period, cb) {
   _loadBudgetPeriodInFlight[period] = cb ? [cb] : [];
   google.script.run
     .withSuccessHandler(function(data) {
-      const buckets = data && data.buckets ? data.buckets : (Array.isArray(data) ? data : []);
+      let buckets = data && data.buckets ? data.buckets : (Array.isArray(data) ? data : []);
+      if (_scnOn()) buckets = _scnPatchBuckets(buckets, period);
       _budgetCache[period] = { disponible: data && data.disponible, buckets: buckets, ts: Date.now() };
       const total = buckets
         .filter(b => !/to assign|à assigner|a assigner|non assign/i.test((b.bucket_name||'').trim()))
@@ -9182,6 +9249,9 @@ let _batchPeriod  = "";
 
 function saveBudget(period, categoryId, rawAmount) {
   const amount = parseFloat(rawAmount) || 0;
+  // Mode scénario : la valeur va dans le calque. Rien n'est mis en attente
+  // d'enregistrement et la navigation reste libre.
+  if (_scnOn()) { _scnSetBudget(period, categoryId, amount); return; }
   _batchPeriod = period;
 
   if (!_batchChanges[categoryId]) {
@@ -10447,6 +10517,7 @@ function confirmDelete() {
     const id = _deletePrevId;
     _deletePrevId = null;
     closeDeleteModal();
+    if (_scnOn()) { _scnPrevDelete(id); return; }
     showSpinner();
     google.script.run.withSuccessHandler(updated => {
       hideSpinner();
@@ -10744,6 +10815,7 @@ function setModalSense(sense) {
 }
 
 function saveModalTransaction() {
+  if (_scnBlockTx()) return;
   const date = document.getElementById("modalDate").value;
   const desc = document.getElementById("modalDesc").value;
 
@@ -11613,6 +11685,7 @@ function savePrevisionModal() {
   };
   if (!form.amount) return;
   closePrevisionModal(); // efface _editingPrevId — mais editId et fn déjà capturés
+  if (_scnOn()) { _scnPrevSave(form); return; }
   showSpinner();
   google.script.run
     .withSuccessHandler(updated => {
@@ -16656,6 +16729,374 @@ function _confirmDeleteProject() {
     _runSplashAnimation();
   }
 })();
+// ═══════════════════════════════════════════════════════════
+// ================= MODE SCÉNARIO (fantôme) =================
+// ═══════════════════════════════════════════════════════════
+// Principe : l'app fonctionne exactement comme d'habitude, mais AUCUNE
+// écriture ne part vers le serveur. Les modifications vivent en mémoire,
+// tout se recalcule normalement, et l'ensemble disparaît à la sortie du
+// mode — sauf si l'utilisateur valide, auquel cas tout est enregistré.
+//
+// Contrat de sûreté : chaque greffe dans une fonction existante est gardée
+// par _scnOn(). Mode désactivé ⇒ le code suit exactement le même chemin
+// qu'avant l'ajout de ce module.
+//
+// Couverture : budgets et revenus attendus (prévisions).
+// Hors périmètre volontaire : les transactions. L'onglet Banque doit rester
+// le reflet du réel, donc la saisie est désactivée pendant le scénario.
+
+window._scnMode     = false;
+window._scnBudgets  = {};    // "MM/YYYY|catId" -> { amount, real }
+window._scnPrevSnap = null;  // copie du réel, pour revenir en arrière
+window._scnSeq      = 0;     // compteur d'ids temporaires
+
+function _scnOn() { return window._scnMode === true; }
+
+function _scnDeepCopy(v) {
+  try { return JSON.parse(JSON.stringify(v)); } catch (e) { return v; }
+}
+
+// ---------- Comptage des modifications en cours ----------
+
+function _scnPrevDiff() {
+  const snap = window._scnPrevSnap || [];
+  const cur  = allPrevisions || [];
+  const byId = {};
+  snap.forEach(function (p) { byId[String(p.id)] = p; });
+  const added = [], updated = [], deleted = [];
+  const seen = {};
+  cur.forEach(function (p) {
+    const id = String(p.id || "");
+    seen[id] = true;
+    const old = byId[id];
+    if (!old) { added.push(p); return; }
+    if (String(old.date) !== String(p.date) ||
+        String(old.description || "") !== String(p.description || "") ||
+        String(old.category_id || "") !== String(p.category_id || "") ||
+        Math.abs((Number(old.amount) || 0) - (Number(p.amount) || 0)) > 0.004) {
+      updated.push(p);
+    }
+  });
+  snap.forEach(function (p) { if (!seen[String(p.id)]) deleted.push(p); });
+  return { added: added, updated: updated, deleted: deleted };
+}
+
+function _scnCount() {
+  const b = Object.keys(window._scnBudgets || {}).length;
+  const d = window._scnPrevSnap ? _scnPrevDiff() : { added: [], updated: [], deleted: [] };
+  const p = d.added.length + d.updated.length + d.deleted.length;
+  return { budgets: b, previsions: p, total: b + p };
+}
+
+// ---------- Application du calque aux données budget ----------
+
+// Renvoie une COPIE des buckets avec les montants du scénario appliqués.
+// Appelée au moment où les données entrent dans le cache : tout l'aval
+// (onglet Budget, projection, Suivi) voit ensuite le scénario sans qu'on
+// ait à intercepter chaque lecture.
+function _scnPatchBuckets(buckets, period) {
+  if (!_scnOn() || !buckets || !period) return buckets;
+  const pref = period + "|";
+  const over = {};
+  let any = false;
+  Object.keys(window._scnBudgets).forEach(function (k) {
+    if (k.indexOf(pref) !== 0) return;
+    over[k.slice(pref.length)] = Number(window._scnBudgets[k].amount) || 0;
+    any = true;
+  });
+  if (!any) return buckets;
+  return buckets.map(function (b) {
+    const copy = {};
+    Object.keys(b).forEach(function (key) { copy[key] = b[key]; });
+    copy.categories = (b.categories || []).map(function (c) {
+      if (!(String(c.category_id) in over)) return c;
+      const nb = over[String(c.category_id)];
+      const cc = {};
+      Object.keys(c).forEach(function (key) { cc[key] = c[key]; });
+      cc.budgeted  = nb;
+      cc.remaining = Math.round((nb - (Number(c.spent) || 0) + (Number(c.carry) || 0)) * 100) / 100;
+      return cc;
+    });
+    return copy;
+  });
+}
+
+// Écart d'assignation introduit par le scénario sur une période.
+// Sert à corriger le « À assigner » calculé par le serveur sur le réel.
+function _scnDispDelta(period) {
+  if (!_scnOn() || !period) return 0;
+  const pref = period + "|";
+  let d = 0;
+  Object.keys(window._scnBudgets).forEach(function (k) {
+    if (k.indexOf(pref) !== 0) return;
+    const o = window._scnBudgets[k];
+    d += (Number(o.amount) || 0) - (Number(o.real) || 0);
+  });
+  return Math.round(d * 100) / 100;
+}
+
+function _scnSetBudget(period, catId, amount) {
+  const key = period + "|" + catId;
+  let real = 0;
+  if (window._scnBudgets[key]) {
+    real = window._scnBudgets[key].real;          // on garde le réel d'origine
+  } else {
+    const cats = (window._budgetCatPeriod === period ? (window._budgetCatDetails || []) : []);
+    const found = cats.find(function (c) { return String(c.category_id) === String(catId); });
+    if (found) {
+      real = Number(found.budgeted) || 0;
+    } else {
+      const cached = _budgetCache[period];
+      if (cached && cached.buckets) {
+        cached.buckets.forEach(function (b) {
+          (b.categories || []).forEach(function (c) {
+            if (String(c.category_id) === String(catId)) real = Number(c.budgeted) || 0;
+          });
+        });
+      }
+    }
+    // Le cache contient déjà la valeur du scénario si on a patché avant :
+    // on ne passe ici qu'à la première modification, donc `real` est le vrai.
+  }
+  window._scnBudgets[key] = { amount: Math.round((Number(amount) || 0) * 100) / 100, real: real };
+  _scnAfterEdit(period);
+}
+
+// ---------- Prévisions (revenus attendus) ----------
+
+function _scnPeriodFromDate(d) {
+  if (!d) return "";
+  const s = String(d);
+  let m = s.match(/^(\d{4})-(\d{2})/);          // YYYY-MM-DD
+  if (m) return m[2] + "/" + m[1];
+  m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);   // DD/MM/YYYY
+  if (m) return m[2] + "/" + m[3];
+  return "";
+}
+
+function _scnPrevSave(form) {
+  const id = form.id;
+  if (id) {
+    allPrevisions = (allPrevisions || []).map(function (p) {
+      if (String(p.id) !== String(id)) return p;
+      const c = _scnDeepCopy(p);
+      c.date        = form.date;
+      c.period      = _scnPeriodFromDate(form.date) || c.period;
+      c.description = form.description;
+      c.category_id = form.category_id;
+      c.amount      = Math.abs(Number(form.amount) || 0);
+      const cat = (allCategories || []).find(function (x) { return String(x.id) === String(form.category_id); });
+      if (cat) c.category_name = cat.name;
+      return c;
+    });
+  } else {
+    const cat = (allCategories || []).find(function (x) { return String(x.id) === String(form.category_id); });
+    allPrevisions = (allPrevisions || []).concat([{
+      id:            "SCN-" + (++window._scnSeq),
+      date:          form.date,
+      period:        _scnPeriodFromDate(form.date),
+      description:   form.description,
+      category_id:   form.category_id,
+      category_name: cat ? cat.name : "",
+      amount:        Math.abs(Number(form.amount) || 0),
+      received:      false,
+      closed:        false,
+      linked_tx_id:  ""
+    }]);
+  }
+  _scnAfterEdit();
+}
+
+function _scnPrevDelete(id) {
+  allPrevisions = (allPrevisions || []).filter(function (p) { return String(p.id) !== String(id); });
+  _scnAfterEdit();
+}
+
+// ---------- Rafraîchissement ----------
+
+// Après une modification en scénario : on invalide le cache budget pour que
+// les données soient re-patchées, puis on re-rend ce qui est visible.
+// L'onglet Banque n'est volontairement pas rafraîchi : il reste le réel.
+function _scnAfterEdit(period) {
+  if (period) { delete _budgetCache[period]; delete window._budgetPeriodTotals[period]; }
+  _scnBannerUpdate();
+  _scnRefresh();
+}
+
+function _scnVisible(id) {
+  const el = document.getElementById(id);
+  return el && el.style.display !== "none";
+}
+
+function _scnRefresh() {
+  try { renderPrevisions(); } catch (e) {}
+  if (_scnVisible("budgetSection")) {
+    try { loadBudget(true); } catch (e) {}
+  } else {
+    try { updateProjection(); } catch (e) {}
+  }
+  if (_scnVisible("suiviSection")) {
+    try { updateProjection(); } catch (e) {}
+    try { renderSuiviTable(); } catch (e) {}
+    if (_scnVisible("suiviTabGraph")) { try { renderDashboard(); } catch (e) {} }
+  }
+}
+
+// ---------- Entrée / sortie / validation ----------
+
+function _scnEnter() {
+  if (_scnOn()) return;
+  if (_batchChanges && Object.keys(_batchChanges).length) {
+    showInfoModal("Enregistre ou annule d'abord tes modifications de budget en attente.");
+    return;
+  }
+  window._scnMode     = true;
+  window._scnBudgets  = {};
+  window._scnPrevSnap = _scnDeepCopy(allPrevisions || []);
+  invalidateBudgetCache();
+  _scnBannerUpdate();
+  _scnRefresh();
+}
+
+function _scnLeave(skipConfirm) {
+  if (!_scnOn()) return;
+  const n = _scnCount();
+  if (!skipConfirm && n.total > 0) {
+    window._scnPendingLeave = true;
+    document.getElementById("scnConfirmText").textContent =
+      "Tes " + n.total + " modification" + (n.total > 1 ? "s" : "") +
+      " de scénario seront perdues. Les données réelles ne changeront pas.";
+    document.getElementById("scnConfirmModal").classList.add("active");
+    return;
+  }
+  window._scnMode = false;
+  window._scnBudgets = {};
+  if (window._scnPrevSnap) allPrevisions = window._scnPrevSnap;
+  window._scnPrevSnap = null;
+  invalidateBudgetCache();
+  _scnBannerUpdate();
+  _scnRefresh();
+}
+
+function _scnConfirmLeave() {
+  document.getElementById("scnConfirmModal").classList.remove("active");
+  window._scnPendingLeave = false;
+  _scnLeave(true);
+}
+
+function _scnCancelLeave() {
+  document.getElementById("scnConfirmModal").classList.remove("active");
+  window._scnPendingLeave = false;
+}
+
+// Validation : on rejoue les modifications vers le serveur, puis on sort.
+function _scnCommit() {
+  if (!_scnOn()) return;
+  const n = _scnCount();
+  if (!n.total) { _scnLeave(true); return; }
+
+  const budgetPayload = Object.keys(window._scnBudgets).map(function (k) {
+    const i = k.indexOf("|");
+    return { period: k.slice(0, i), category_id: k.slice(i + 1), amount: window._scnBudgets[k].amount };
+  });
+  const diff = _scnPrevDiff();
+
+  // Chaîne d'appels séquentielle : GAS n'aime pas les écritures concurrentes
+  const steps = [];
+  if (budgetPayload.length) {
+    steps.push(function (next, fail) {
+      google.script.run.withSuccessHandler(function () { next(); })
+        .withFailureHandler(fail).saveBudgetBatch(budgetPayload);
+    });
+  }
+  diff.deleted.forEach(function (p) {
+    steps.push(function (next, fail) {
+      google.script.run.withSuccessHandler(function () { next(); })
+        .withFailureHandler(fail).deletePrevision(p.id);
+    });
+  });
+  diff.updated.forEach(function (p) {
+    steps.push(function (next, fail) {
+      google.script.run.withSuccessHandler(function () { next(); })
+        .withFailureHandler(fail).updatePrevision({
+          id: p.id, date: p.date, description: p.description,
+          category_id: p.category_id, amount: Math.abs(Number(p.amount) || 0)
+        });
+    });
+  });
+  diff.added.forEach(function (p) {
+    steps.push(function (next, fail) {
+      google.script.run.withSuccessHandler(function () { next(); })
+        .withFailureHandler(fail).addPrevision({
+          date: p.date, description: p.description,
+          category_id: p.category_id, amount: Math.abs(Number(p.amount) || 0)
+        });
+    });
+  });
+
+  showSpinner();
+  let i = 0;
+  const fail = function (err) {
+    hideSpinner();
+    showInfoModal("Validation interrompue : " +
+      ((err && err.message) ? err.message : String(err)) +
+      "<br><br>Une partie des modifications a pu être enregistrée. " +
+      "Le scénario reste actif — vérifie puis relance la validation.");
+  };
+  const next = function () {
+    if (i >= steps.length) {
+      hideSpinner();
+      // Sortie sans confirmation : tout est enregistré, puis rechargement réel
+      window._scnMode = false;
+      window._scnBudgets = {};
+      window._scnPrevSnap = null;
+      invalidateBudgetCache();
+      window._budgetSummaryLoaded = false;
+      _scnBannerUpdate();
+      try { _refreshAll(); } catch (e) { _scnRefresh(); }
+      try { _logAction("🎬", "Scénario validé — " + n.total + " modification" + (n.total > 1 ? "s" : "")); } catch (e) {}
+      return;
+    }
+    const step = steps[i++];
+    try { step(next, fail); } catch (e) { fail(e); }
+  };
+  next();
+}
+
+// ---------- Bandeau ----------
+
+function _scnBannerUpdate() {
+  const bar = document.getElementById("scnBar");
+  if (!bar) return;
+  if (!_scnOn()) { bar.classList.remove("visible"); document.body.classList.remove("scn-active"); return; }
+  document.body.classList.add("scn-active");
+  const n = _scnCount();
+  const txt = document.getElementById("scnBarInfo");
+  if (txt) {
+    txt.textContent = n.total
+      ? ("Scénario — " + n.budgets + " budget" + (n.budgets > 1 ? "s" : "") +
+         ", " + n.previsions + " revenu" + (n.previsions > 1 ? "s" : ""))
+      : "Mode scénario — rien n'est enregistré";
+  }
+  const btn = document.getElementById("scnBarSave");
+  if (btn) btn.disabled = !n.total;
+  bar.classList.add("visible");
+}
+
+function _scnToggle() {
+  if (_scnOn()) _scnLeave(false); else _scnEnter();
+}
+
+// Garde-fou : la saisie de transactions n'a pas de sens en scénario
+// (l'onglet Banque doit rester le reflet du réel).
+function _scnBlockTx() {
+  if (!_scnOn()) return false;
+  showInfoModal("Mode scénario actif : la saisie de transactions est désactivée. " +
+                "Les transactions restent réelles et ne se simulent pas.<br><br>" +
+                "Tu peux modifier les budgets et les revenus attendus.");
+  return true;
+}
+
 </script>
 
 

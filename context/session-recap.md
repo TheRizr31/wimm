@@ -1,5 +1,51 @@
 # WIMM? — Récapitulatif de session
 
+## 21/09/2026 — MODE SCÉNARIO (« fantôme »)
+
+**Demande** : « l'app fonctionne pareil mais sans écrasement, ce n'est que de la visualisation. Modifier les budgets, les revenus attendus, en ajouter. Mais pas de sauvegarder. Comme un fantôme de WIMM qui se crée et disparaît en sortant du mode. » Validation explicite ⇒ tout est enregistré.
+
+### La découverte qui a tout simplifié
+La moitié du mécanisme existait déjà : `saveBudget()` **n'écrit pas au serveur**, il accumule dans `_batchChanges` (barre « N modifications en attente », `✓ Enregistrer` / `✕ Annuler`). Manquaient : les prévisions, la navigation libre (`_lockNav()` bloquait), la persistance en mémoire (`loadBudget()` effaçait `_batchChanges`), et la propagation à Suivi.
+
+### La couture clé
+`renderSuiviTable` lit les budgets à **six endroits** (`_budgetCache`, `_budgetPeriodTotals`, `_lastBudgetData`, `_budgetCatDetails`, `getBudgetPeriods()`). Intercepter chaque lecture était impraticable.
+
+Tout descend de **deux points d'écriture du cache** : `loadBudget()` et `_loadBudgetForPeriod()`. Le calque est donc appliqué **à l'entrée du cache** (`_scnPatchBuckets`) → Budget, projection et Suivi voient le scénario sans interception supplémentaire.
+
+Et comme `allTransactions` n'est **jamais** touché, l'onglet Banque reste réel sans effort.
+
+### Architecture
+| État | Rôle |
+|---|---|
+| `window._scnMode` | mode actif |
+| `window._scnBudgets` | `"MM/YYYY\|catId" -> {amount, real}` — le calque budgets |
+| `window._scnPrevSnap` | copie du réel de `allPrevisions`, pour revenir en arrière |
+
+- **Entrée** : snapshot des prévisions + `invalidateBudgetCache()`
+- **Sortie** : restauration du snapshot + invalidation → le fantôme disparaît
+- **Validation** : `_scnCommit()` rejoue vers le serveur **séquentiellement** (GAS n'aime pas les écritures concurrentes) — `saveBudgetBatch` puis suppressions, modifications, ajouts de prévisions. Les prévisions sont calculées par **diff** entre le snapshot et l'état courant, ce qui gère correctement « ajouter puis modifier ».
+
+### Périmètre
+Couvert : budgets, revenus attendus (création, modification, suppression).
+**Exclu volontairement** : les transactions. La saisie est désactivée en mode scénario (`_scnBlockTx`) — Banque doit rester le reflet du réel.
+
+### Propriété de sûreté vérifiée
+- **443 lignes ajoutées, 2 modifiées.** Les deux : ajout de `!_scnOn() &&` dans une condition, et `const buckets` → `let buckets`.
+- Les **9 greffes** dans le code existant sont toutes des branchements `if (_scnOn())` en tête ⇒ **mode désactivé = chemin d'exécution identique à avant**.
+- Syntaxe validée (`node --check`), balises équilibrées, fonctions et identifiants uniques vérifiés.
+
+### Approximation connue
+`disponible` (« À assigner ») est corrigé en retranchant le delta d'assignation au chiffre serveur (`_scnDispDelta`). Le serveur applique en plus un écrêtage (min 0, logique cross-périodes) que cette correction ne reproduit pas exactement. C'est la même approximation que `_recomputeLocalBudget()` fait déjà pour l'affichage optimiste — comportement cohérent avec l'existant, mais à surveiller sur les cas limites.
+
+### À vérifier au test
+- Bouton 🎬 Scénario dans la barre d'actions Budget ; bandeau violet en haut une fois activé
+- Modifier un budget : le chiffre change, **aucune barre « en attente »**, navigation libre
+- Aller sur Suivi : la trésorerie doit refléter le scénario
+- Prévisions (onglet Banque) : ajout/modification/suppression simulés
+- Quitter → confirmation, puis retour au réel intégral
+- Valider → tout est enregistré, rechargement complet
+
+
 ## 21/09/2026 — REBASAGE SUR `main` @661 (le vrai code live)
 
 ### Le point le plus important : où vit le code
